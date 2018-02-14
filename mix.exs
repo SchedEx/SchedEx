@@ -6,8 +6,12 @@ defmodule SchedEx.Mixfile do
       app: :sched_ex,
       version: "0.1.0",
       elixir: "~> 1.5",
-      start_permanent: Mix.env == :prod,
-      deps: deps()
+      start_permanent: Mix.env() == :prod,
+      description: description(),
+      package: package(),
+      deps: deps(),
+      name: "SchedEx",
+      source_url: "https://github.com/SchedEx/SchedEx"
     ]
   end
 
@@ -20,7 +24,21 @@ defmodule SchedEx.Mixfile do
   defp deps do
     [
       {:timex, "~> 3.1"},
-      {:mix_test_watch, "~> 0.0", only: :dev, runtime: false},
+      {:ex_doc, ">= 0.0.0", only: :dev},
+      {:mix_test_watch, "~> 0.0", only: :dev, runtime: false}
+    ]
+  end
+
+  defp description() do
+    "SchedEx is a simple yet deceptively powerful scheduling library for Elixir. It is trivially simple by design, and is especially suited for use within an event sourced architecture."
+  end
+
+  defp package() do
+    [
+      files: ["lib", "test", "config", "mix.exs", "README*", "LICENSE*"],
+      maintainers: ["Mat Trudel"],
+      licenses: ["MIT"],
+      links: %{"GitHub" => "https://github.com/SchedEx/SchedEx"}
     ]
   end
 end
