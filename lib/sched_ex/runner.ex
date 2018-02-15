@@ -1,6 +1,12 @@
 defmodule SchedEx.Runner do
+  @moduledoc false
+
   use GenServer
 
+  @doc """
+  Main point of entry into this module. Starts and returns a process which will
+  run the given function after the specified delay
+  """
   def run_in(func, delay, opts) when is_function(func) and is_integer(delay) do
     if delay > 0 do
       GenServer.start_link(__MODULE__, {func, delay, opts})
@@ -10,6 +16,9 @@ defmodule SchedEx.Runner do
     end
   end
 
+  @doc """
+  Cancels future invocation of the given process. If it has already been invoked, does nothing.
+  """
   def cancel(pid) when is_pid(pid) do
     :shutdown = send(pid, :shutdown)
     :ok
@@ -20,6 +29,7 @@ defmodule SchedEx.Runner do
   end
 
   # Server API
+
   def init({func, delay, opts}) do
     Process.flag(:trap_exit, true)
     Process.send_after(self(), :run, delay)

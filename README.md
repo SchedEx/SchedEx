@@ -1,4 +1,5 @@
-# SchedEx
+<img src="https://user-images.githubusercontent.com/79646/36270991-42e8d440-124b-11e8-9bd6-17cfc02b77fa.png" alt="SchedEx" width="300"/>
+
 [![Build Status](https://travis-ci.org/SchedEx/SchedEx.svg?branch=master)](https://travis-ci.org/SchedEx/SchedEx)
 [![Inline docs](http://inch-ci.org/github/SchedEx/SchedEx.svg?branch=master&style=flat)](http://inch-ci.org/github/SchedEx/SchedEx)
 
@@ -18,6 +19,8 @@ again as needed.
 
 SchedEx is written by [Mat Trudel](http://github.com/mtrudel), and development is generously supported by the fine folks
 at [FunnelCloud](http://funnelcloud.io).
+
+For usage details, please refer to the [documentation](https://hexdocs.pm/sched_ex).
 
 # Basic Usage
 

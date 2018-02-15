@@ -1,6 +1,6 @@
 defmodule SchedEx do
   @moduledoc """
-  SchedEx schedules 'jobs' (either m,f,a tuples or functions) to run in the future. 
+  SchedEx schedules jobs (either m,f,a tuples or functions) to run in the future. These jobs are run in isolated processes, and are unsurpervised.
   """
 
   @doc """
