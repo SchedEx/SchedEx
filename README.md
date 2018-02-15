@@ -24,10 +24,10 @@ For usage details, please refer to the [documentation](https://hexdocs.pm/sched_
 
 # Basic Usage
 
-In common usage, SchedEx provides two methods which serve to schedule jobs; `SchedEx.run_at`, and `SchedEx.run_in`. As the names
+In common usage, SchedEx provides three methods which serve to schedule jobs; `SchedEx.run_at`, `SchedEx.run_in`, and `SchedEx.run_every`. As the names
 suggest, `SchedEx.run_at` takes a `DateTime` struct which indicates the time at which the job should be executed, and `SchedEx.run_in`
-takes a duration in integer milliseconds from the time the function is called at which to execute the job. Both
-functions come in `module, function, argument` tuple and `fn` forms:
+takes a duration in integer milliseconds from the time the function is called at which to execute the job.
+`SchedEx.run_every` takes a valid crontab string and runs the job accordingly. All functions come in `module, function, argument` tuple and `fn` forms:
 
 ``` elixir
 # Scheduling for a particular date
@@ -36,6 +36,9 @@ SchedEx.run_at(IO, :write, ["Happy New Year!"], date)
 
 # Scheduling with a given delay
 SchedEx.run_in(IO, :write, ["Hello, delayed world!"], 10000)
+
+# Scheduling with a crontab string
+SchedEx.run_every(IO, :write, ["Hello, even-minute world!"], "*/2 * * * *")
 
 # You can also pass a fn
 SchedEx.run_in(fn() -> IO.write("Hello, delayed world!") end, 10000)
@@ -48,6 +51,17 @@ It is crucial to understand that SchedEx deliberately does *not* supervise or ma
 process instances which back scheduling are linked directly to the calling process and are set to trap on exit. What
 this means in practice is that if the calling process crashes, all pending jobs scheduled by that process will be
 implicitly canceled.
+
+## Crontab details
+
+Jobs scheduled via `SchedEx.run_every` are implicitly recurring; they continue to to execute according to the crontab
+until `SchedEx.cancel/1` is called or the original calling process terminates. If job execution takes longer than the
+scheduling interval, the job is requeued at the next mathcing interval (for example, if a job set to run every minute
+(crontab `* * * * *`) takes 61 seconds to run at minute `x` it will not run at minute `x+1` and will next run at minute
+`x+2`).
+
+SchedEx uses the [crontab](https://github.com/jshmrtn/crontab) library to parse crontab strings. If it is unable to
+parse the given crontab string, an error is returned from the `SchedEx.run_every` call and no jobs are scheduled.
 
 # Installation
 

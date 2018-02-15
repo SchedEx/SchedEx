@@ -17,12 +17,13 @@ defmodule SchedEx.Mixfile do
 
   def application do
     [
-      extra_applications: [:logger, :timex]
+      extra_applications: [:crontab, :logger, :timex]
     ]
   end
 
   defp deps do
     [
+      {:crontab, "~> 1.1.2"},
       {:timex, "~> 3.1"},
       {:ex_doc, ">= 0.0.0", only: :dev},
       {:mix_test_watch, "~> 0.0", only: :dev, runtime: false},

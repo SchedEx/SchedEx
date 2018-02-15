@@ -33,6 +33,20 @@ defmodule SchedEx do
   end
 
   @doc """
+  Runs the given module, function and argument tuple on every occurence of the given crontab
+  """
+  def run_every(m, f, a, crontab, opts \\ []) when is_atom(m) and is_atom(f) and is_list(a) do
+    run_every(fn -> apply(m,f,a) end, crontab, opts)
+  end
+
+  @doc """
+  Runs the given function on every occurence of the given crontab
+  """
+  def run_every(func, crontab, opts \\ []) when is_function(func) do
+    SchedEx.Runner.run_every(func, crontab, opts)
+  end
+
+  @doc """
   Cancels the given scheduled job
   """
   def cancel(token) do
