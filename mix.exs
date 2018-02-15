@@ -25,7 +25,8 @@ defmodule SchedEx.Mixfile do
     [
       {:timex, "~> 3.1"},
       {:ex_doc, ">= 0.0.0", only: :dev},
-      {:mix_test_watch, "~> 0.0", only: :dev, runtime: false}
+      {:mix_test_watch, "~> 0.0", only: :dev, runtime: false},
+      {:inch_ex, only: :docs}
     ]
   end
 

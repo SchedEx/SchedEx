@@ -1,4 +1,6 @@
 # SchedEx
+[![Build Status](https://travis-ci.org/SchedEx/SchedEx.svg?branch=master)](https://travis-ci.org/SchedEx/SchedEx)
+[![Inline docs](http://inch-ci.org/github/SchedEx/SchedEx.svg?branch=master&style=flat)](http://inch-ci.org/github/SchedEx/SchedEx)
 
 SchedEx is a simple yet deceptively powerful scheduling library for Elixir. It is trivially simple by design, and is especially
 suited for use within an event sourced architecture.
