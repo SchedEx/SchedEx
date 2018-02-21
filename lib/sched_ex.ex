@@ -46,7 +46,8 @@ defmodule SchedEx do
   end
 
   @doc """
-  Runs the given function on every occurence of the given crontab
+  Runs the given function on every occurence of the given crontab. If func is of arity 1, the 
+  scheduled execution time will be passed for each invocation
 
   Supports the following options:
 

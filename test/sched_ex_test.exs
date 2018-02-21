@@ -128,6 +128,16 @@ defmodule SchedExTest do
       assert TestCallee.clear(context.agent) == [1, 1]
     end
 
+    test "optionally passes the runtime into the fn", context do
+      start_supervised!({TestTimeScale, {Timex.now("UTC"), 60}}, restart: :temporary)
+      {:ok, crontab} = Crontab.CronExpression.Parser.parse("* * * * *")
+      {:ok, expected_naive_time} = Crontab.Scheduler.get_next_run_date(crontab, NaiveDateTime.utc_now())
+      expected_time = Timex.to_datetime(expected_naive_time, "UTC")
+      SchedEx.run_every(fn(time) -> TestCallee.append(context.agent, time) end, "* * * * *", time_scale: TestTimeScale)
+      Process.sleep(1000 + @sleep_duration)
+      assert TestCallee.clear(context.agent) == [expected_time]
+    end
+
     test "is cancellable", context do
       start_supervised!({TestTimeScale, {Timex.now("UTC"), 60}}, restart: :temporary)
       {:ok, token} = SchedEx.run_every(TestCallee, :append, [context.agent, 1], "* * * * *", time_scale: TestTimeScale)

@@ -51,14 +51,18 @@ defmodule SchedEx.Runner do
 
   def init({func, %Crontab.CronExpression{} = crontab, opts}) do
     Process.flag(:trap_exit, true)
-    schedule_next(crontab, opts)
-    {:ok, %{func: func, crontab: crontab, opts: opts}}
+    next_time = schedule_next(crontab, opts)
+    {:ok, %{func: func, crontab: crontab, scheduled_at: next_time, opts: opts}}
   end
 
-  def handle_info(:run, %{crontab: crontab, opts: opts} = state) do
-    state.func.()
-    schedule_next(crontab, opts)
-    {:noreply, state}
+  def handle_info(:run, %{crontab: crontab, scheduled_at: this_time, opts: opts} = state) do
+    if is_function(state.func, 1) do
+      state.func.(this_time)
+    else
+      state.func.()
+    end
+    next_time = schedule_next(crontab, opts)
+    {:noreply, %{state | scheduled_at: next_time}}
   end
 
   def handle_info(:run, state) do
@@ -77,5 +81,6 @@ defmodule SchedEx.Runner do
     next = Timex.to_datetime(naive_next, now.time_zone)
     delay = round(DateTime.diff(next, now, :millisecond) / time_scale.speedup())
     Process.send_after(self(), :run, delay)
+    next
   end
 end
