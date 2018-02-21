@@ -30,7 +30,7 @@ defmodule SchedExTest do
   end
 
   describe "run_at" do
-    test "runs the m,f,a tuple at the expected time", context do
+    test "runs the m,f,a at the expected time", context do
       SchedEx.run_at(TestCallee, :append, [context.agent, 1], Timex.shift(DateTime.utc_now(), milliseconds: @sleep_duration))
       Process.sleep(2 * @sleep_duration)
       assert TestCallee.clear(context.agent) == [1]
@@ -57,7 +57,7 @@ defmodule SchedExTest do
   end
 
   describe "run_in" do
-    test "runs the m,f,a tuple after the expected delay", context do
+    test "runs the m,f,a after the expected delay", context do
       SchedEx.run_in(TestCallee, :append, [context.agent, 1], @sleep_duration)
       Process.sleep(2 * @sleep_duration)
       assert TestCallee.clear(context.agent) == [1]
@@ -86,7 +86,7 @@ defmodule SchedExTest do
   describe "run_every" do
     @tag :slow
     @tag timeout: 3 * @one_minute
-    test "runs the m,f,a tuple per the given crontab", context do
+    test "runs the m,f,a per the given crontab", context do
       SchedEx.run_every(TestCallee, :append, [context.agent, 1], "* * * * *")
       Process.sleep(2 * @one_minute)
       assert TestCallee.clear(context.agent) == [1, 1]

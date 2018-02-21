@@ -1,10 +1,10 @@
 defmodule SchedEx do
   @moduledoc """
-  SchedEx schedules jobs (either m,f,a tuples or functions) to run in the future. These jobs are run in isolated processes, and are unsurpervised.
+  SchedEx schedules jobs (either an m,f,a or a function) to run in the future. These jobs are run in isolated processes, and are unsurpervised.
   """
 
   @doc """
-  Runs the given module, function and argument tuple at the given time
+  Runs the given module, function and argument at the given time
   """
   def run_at(m, f, a, %DateTime{} = time) when is_atom(m) and is_atom(f) and is_list(a) do
     run_at(fn -> apply(m,f,a) end, time)
@@ -19,7 +19,7 @@ defmodule SchedEx do
   end
 
   @doc """
-  Runs the given module, function and argument tuple in given number of milliseconds
+  Runs the given module, function and argument in the given number of milliseconds
   """
   def run_in(m, f, a, delay, opts \\ []) when is_atom(m) and is_atom(f) and is_list(a) do
     run_in(fn -> apply(m,f,a) end, delay, opts)
@@ -33,7 +33,7 @@ defmodule SchedEx do
   end
 
   @doc """
-  Runs the given module, function and argument tuple on every occurence of the given crontab
+  Runs the given module, function and argument on every occurence of the given crontab
   """
   def run_every(m, f, a, crontab, opts \\ []) when is_atom(m) and is_atom(f) and is_list(a) do
     run_every(fn -> apply(m,f,a) end, crontab, opts)

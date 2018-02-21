@@ -46,7 +46,7 @@ In addition to `SchedEx.run_every`, SchedEx provides two other methods which ser
 and `SchedEx.run_in`. As the names suggest, `SchedEx.run_at` takes a `DateTime` struct which indicates the time at which
 the job should be executed, and `SchedEx.run_in` takes a duration in integer milliseconds from the time the function is
 called at which to execute the job. Similarly to `SchedEx.run_every`, these functions both come in `module, function,
-argument` tuple and `fn` form.
+argument` and `fn` form.
 
 The above functions have the same return values as standard `start_link` functions (`{:ok, pid}` on success, `{:error,
 error}` on error). The returned pid can be passed to `SchedEx.cancel` to cancel any further invocations of the job.
