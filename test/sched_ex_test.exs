@@ -116,21 +116,21 @@ defmodule SchedExTest do
     end
 
     test "runs the m,f,a per the given crontab", context do
-      start_supervised!({TestTimeScale, {Timex.now("UTC"), 60}}, restart: :temporary)
+      {:ok, _} = start_supervised({TestTimeScale, {Timex.now("UTC"), 60}}, restart: :temporary)
       SchedEx.run_every(TestCallee, :append, [context.agent, 1], "* * * * *", time_scale: TestTimeScale)
       Process.sleep(2000)
       assert TestCallee.clear(context.agent) == [1, 1]
     end
 
     test "runs the fn per the given crontab", context do
-      start_supervised!({TestTimeScale, {Timex.now("UTC"), 60}}, restart: :temporary)
+      {:ok, _} = start_supervised({TestTimeScale, {Timex.now("UTC"), 60}}, restart: :temporary)
       SchedEx.run_every(fn() -> TestCallee.append(context.agent, 1) end, "* * * * *", time_scale: TestTimeScale)
       Process.sleep(2000)
       assert TestCallee.clear(context.agent) == [1, 1]
     end
 
     test "optionally passes the runtime into the fn", context do
-      start_supervised!({TestTimeScale, {Timex.now("UTC"), 60}}, restart: :temporary)
+      {:ok, _} = start_supervised({TestTimeScale, {Timex.now("UTC"), 60}}, restart: :temporary)
       {:ok, crontab} = Crontab.CronExpression.Parser.parse("* * * * *")
       {:ok, expected_naive_time} = Crontab.Scheduler.get_next_run_date(crontab, NaiveDateTime.utc_now())
       expected_time = Timex.to_datetime(expected_naive_time, "UTC")
@@ -141,7 +141,7 @@ defmodule SchedExTest do
 
     test "supports interpreting crontab in a given timezone", context do
       now = Timex.now("America/Chicago")
-      start_supervised!({TestTimeScale, {now, 86400}}, restart: :temporary)
+      {:ok, _} = start_supervised({TestTimeScale, {now, 86400}}, restart: :temporary)
       {:ok, crontab} = Crontab.CronExpression.Parser.parse("0 1 * * *")
       {:ok, naive_expected_time} = Crontab.Scheduler.get_next_run_date(crontab, DateTime.to_naive(now))
       expected_time = Timex.to_datetime(naive_expected_time, "America/Chicago")
@@ -153,7 +153,7 @@ defmodule SchedExTest do
     test "handles scheduling when crontab refers to an ambiguous time (for example on DST transition)", context do
       # Next time will resolve to 1:00 AM CST, which is ambiguous
       now = Timex.to_datetime({{2017, 11, 5}, {0, 30, 0}}, "America/Chicago")
-      start_supervised!({TestTimeScale, {now, 86400}}, restart: :temporary)
+      {:ok, _} = start_supervised({TestTimeScale, {now, 86400}}, restart: :temporary)
       {:ok, crontab} = Crontab.CronExpression.Parser.parse("0 1 * * *")
       {:ok, naive_expected_time} = Crontab.Scheduler.get_next_run_date(crontab, DateTime.to_naive(now))
       expected_time = Timex.to_datetime(naive_expected_time, "America/Chicago").after
@@ -163,7 +163,7 @@ defmodule SchedExTest do
     end
 
     test "is cancellable", context do
-      start_supervised!({TestTimeScale, {Timex.now("UTC"), 60}}, restart: :temporary)
+      {:ok, _} = start_supervised({TestTimeScale, {Timex.now("UTC"), 60}}, restart: :temporary)
       {:ok, token} = SchedEx.run_every(TestCallee, :append, [context.agent, 1], "* * * * *", time_scale: TestTimeScale)
       :ok = SchedEx.cancel(token)
       Process.sleep(1000)
