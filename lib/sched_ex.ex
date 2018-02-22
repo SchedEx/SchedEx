@@ -37,6 +37,9 @@ defmodule SchedEx do
 
   Supports the following options:
 
+  timezone: A string timezone identifier ("America/Chicago") specifying the timezone within which 
+  the crontab should be interpreted. If not specified, defaults to "UTC"
+
   time_scale: A module implementing two methods: now/1, which returns the current time in the specified timezone, and 
   speedup/0, which returns an integer factor to speed up delays by. Used mostly for speeding up test runs. If not specified, defaults to 
   an identity module which returns 'now', and a factor of 1
@@ -50,6 +53,9 @@ defmodule SchedEx do
   scheduled execution time will be passed for each invocation
 
   Supports the following options:
+
+  timezone: A string timezone identifier ("America/Chicago") specifying the timezone within which 
+  the crontab should be interpreted. If not specified, defaults to "UTC"
 
   time_scale: A module implementing two methods: now/1, which returns the current time in the specified timezone, and 
   speedup/0, which returns an integer factor to speed up delays by. Used mostly for speeding up test runs. If not specified, defaults to 

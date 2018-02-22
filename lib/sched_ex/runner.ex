@@ -76,9 +76,13 @@ defmodule SchedEx.Runner do
 
   defp schedule_next(%Crontab.CronExpression{} = crontab, opts) do
     time_scale = Keyword.get(opts, :time_scale, SchedEx.IdentityTimeScale)
-    now = time_scale.now("UTC")
+    timezone = Keyword.get(opts, :timezone, "UTC")
+    now = time_scale.now(timezone)
     {:ok, naive_next} = Crontab.Scheduler.get_next_run_date(crontab, DateTime.to_naive(now))
-    next = Timex.to_datetime(naive_next, now.time_zone)
+    next = case Timex.to_datetime(naive_next, timezone) do
+      %Timex.AmbiguousDateTime{after: later_time} -> later_time
+      time -> time
+    end
     delay = round(DateTime.diff(next, now, :millisecond) / time_scale.speedup())
     Process.send_after(self(), :run, delay)
     next
