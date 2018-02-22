@@ -6,8 +6,6 @@ defmodule SchedExTest do
   doctest SchedEx
 
   @sleep_duration 20
-  @one_minute 60*1000
-
   defmodule TestCallee do
     use Agent
 
@@ -84,28 +82,57 @@ defmodule SchedExTest do
   end
 
   describe "run_every" do
-    @tag :slow
-    @tag timeout: 3 * @one_minute
+    defmodule TestTimeScale do
+      use GenServer
+
+      def start_link(args) do
+        GenServer.start_link(__MODULE__, args, name: __MODULE__)
+      end
+
+      def now(timezone) do
+        GenServer.call(__MODULE__, {:now, timezone})
+      end
+
+      def speedup do
+        GenServer.call(__MODULE__, {:speedup})
+      end
+
+      def init({base_time, speedup}) do
+        {:ok, %{base_time: base_time, time_0: Timex.now(), speedup: speedup}}
+      end
+
+      def handle_call({:now, timezone}, _from, %{base_time: base_time, time_0: time_0, speedup: speedup} = state) do
+        diff = DateTime.diff(Timex.now(), time_0, :millisecond) * speedup
+        now = base_time
+              |> Timex.shift(milliseconds: diff)
+              |> Timex.Timezone.convert(timezone)
+        {:reply, now, state}
+      end
+
+      def handle_call({:speedup}, _from, %{speedup: speedup} = state) do
+        {:reply, speedup, state}
+      end
+    end
+
     test "runs the m,f,a per the given crontab", context do
-      SchedEx.run_every(TestCallee, :append, [context.agent, 1], "* * * * *")
-      Process.sleep(2 * @one_minute)
+      start_supervised!({TestTimeScale, {Timex.now("UTC"), 60}}, restart: :temporary)
+      SchedEx.run_every(TestCallee, :append, [context.agent, 1], "* * * * *", time_scale: TestTimeScale)
+      Process.sleep(2000 + @sleep_duration)
       assert TestCallee.clear(context.agent) == [1, 1]
     end
 
-    @tag :slow
-    @tag timeout: 3 * @one_minute
     test "runs the fn per the given crontab", context do
-      SchedEx.run_every(fn() -> TestCallee.append(context.agent, 1) end, "* * * * *")
-      Process.sleep(2 * @one_minute)
+      start_supervised!({TestTimeScale, {Timex.now("UTC"), 60}}, restart: :temporary)
+      SchedEx.run_every(fn() -> TestCallee.append(context.agent, 1) end, "* * * * *", time_scale: TestTimeScale)
+      Process.sleep(2000 + @sleep_duration)
       assert TestCallee.clear(context.agent) == [1, 1]
     end
 
-    @tag :slow
-    @tag timeout: 2 * @one_minute
     test "is cancellable", context do
-      {:ok, token} = SchedEx.run_every(TestCallee, :append, [context.agent, 1], "* * * * *")
+      start_supervised!({TestTimeScale, {Timex.now("UTC"), 60}}, restart: :temporary)
+      {:ok, token} = SchedEx.run_every(TestCallee, :append, [context.agent, 1], "* * * * *", time_scale: TestTimeScale)
       :ok = SchedEx.cancel(token)
-      Process.sleep(1 * @one_minute)
+      Process.sleep(1000 + @sleep_duration)
       assert TestCallee.clear(context.agent) == []
     end
 

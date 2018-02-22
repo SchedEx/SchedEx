@@ -34,6 +34,12 @@ defmodule SchedEx do
 
   @doc """
   Runs the given module, function and argument on every occurence of the given crontab
+
+  Supports the following options:
+
+  time_scale: A module implementing two methods: now/1, which returns the current time in the specified timezone, and 
+  speedup/0, which returns an integer factor to speed up delays by. Used mostly for speeding up test runs. If not specified, defaults to 
+  an identity module which returns 'now', and a factor of 1
   """
   def run_every(m, f, a, crontab, opts \\ []) when is_atom(m) and is_atom(f) and is_list(a) do
     run_every(fn -> apply(m,f,a) end, crontab, opts)
@@ -41,6 +47,12 @@ defmodule SchedEx do
 
   @doc """
   Runs the given function on every occurence of the given crontab
+
+  Supports the following options:
+
+  time_scale: A module implementing two methods: now/1, which returns the current time in the specified timezone, and 
+  speedup/0, which returns an integer factor to speed up delays by. Used mostly for speeding up test runs. If not specified, defaults to 
+  an identity module which returns 'now', and a factor of 1
   """
   def run_every(func, crontab, opts \\ []) when is_function(func) do
     SchedEx.Runner.run_every(func, crontab, opts)

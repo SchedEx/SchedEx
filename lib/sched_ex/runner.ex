@@ -51,15 +51,13 @@ defmodule SchedEx.Runner do
 
   def init({func, %Crontab.CronExpression{} = crontab, opts}) do
     Process.flag(:trap_exit, true)
-    delay = delay_until(crontab)
-    Process.send_after(self(), :run, delay)
+    schedule_next(crontab, opts)
     {:ok, %{func: func, crontab: crontab, opts: opts}}
   end
 
-  def handle_info(:run, %{crontab: crontab} = state) do
+  def handle_info(:run, %{crontab: crontab, opts: opts} = state) do
     state.func.()
-    delay = delay_until(crontab)
-    Process.send_after(self(), :run, delay)
+    schedule_next(crontab, opts)
     {:noreply, state}
   end
 
@@ -72,10 +70,12 @@ defmodule SchedEx.Runner do
     {:stop, :normal, state}
   end
 
-  defp delay_until(%Crontab.CronExpression{} = crontab) do
-    naive_now = DateTime.utc_now()
-                |> DateTime.to_naive()
-    {:ok, naive_next} = Crontab.Scheduler.get_next_run_date(crontab)
-    NaiveDateTime.diff(naive_next, naive_now) * 1000
+  defp schedule_next(%Crontab.CronExpression{} = crontab, opts) do
+    time_scale = Keyword.get(opts, :time_scale, SchedEx.IdentityTimeScale)
+    now = time_scale.now("UTC")
+    {:ok, naive_next} = Crontab.Scheduler.get_next_run_date(crontab, DateTime.to_naive(now))
+    next = Timex.to_datetime(naive_next, now.time_zone)
+    delay = round(DateTime.diff(next, now, :millisecond) / time_scale.speedup())
+    Process.send_after(self(), :run, delay)
   end
 end
