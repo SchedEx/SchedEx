@@ -129,6 +129,14 @@ defmodule SchedExTest do
       assert TestCallee.clear(context.agent) == [1, 1]
     end
 
+    test "supports crontab expressions (and extended ones at that)", context do
+      {:ok, _} = start_supervised({TestTimeScale, {Timex.now("UTC"), 1}}, restart: :temporary)
+      crontab = Crontab.CronExpression.Parser.parse!("* * * * * *", true)
+      SchedEx.run_every(fn() -> TestCallee.append(context.agent, 1) end, crontab, time_scale: TestTimeScale)
+      Process.sleep(2000)
+      assert TestCallee.clear(context.agent) == [1, 1]
+    end
+
     test "optionally passes the runtime into the fn", context do
       {:ok, _} = start_supervised({TestTimeScale, {Timex.now("UTC"), 60}}, restart: :temporary)
       {:ok, crontab} = Crontab.CronExpression.Parser.parse("* * * * *")

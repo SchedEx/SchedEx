@@ -21,7 +21,7 @@ defmodule SchedEx.Runner do
   repeatedly run the given function according to the specified crontab
   """
   def run_every(func, crontab, opts) when is_function(func) do
-    case Crontab.CronExpression.Parser.parse(crontab) do
+    case as_crontab(crontab) do
       {:ok, expression} ->
         GenServer.start_link(__MODULE__, {func, expression, opts})
       {:error, _} = error ->
@@ -73,6 +73,9 @@ defmodule SchedEx.Runner do
   def handle_info(:shutdown, state) do
     {:stop, :normal, state}
   end
+
+  defp as_crontab(%Crontab.CronExpression{} = crontab), do: {:ok, crontab}
+  defp as_crontab(crontab), do: Crontab.CronExpression.Parser.parse(crontab)
 
   defp schedule_next(%Crontab.CronExpression{} = crontab, opts) do
     time_scale = Keyword.get(opts, :time_scale, SchedEx.IdentityTimeScale)
