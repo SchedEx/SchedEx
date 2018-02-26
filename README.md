@@ -55,7 +55,7 @@ error}` on error). The returned pid can be passed to `SchedEx.cancel` to cancel 
 
 Jobs scheduled via `SchedEx.run_every` are implicitly recurring; they continue to to execute according to the crontab
 until `SchedEx.cancel/1` is called or the original calling process terminates. If job execution takes longer than the
-scheduling interval, the job is requeued at the next mathcing interval (for example, if a job set to run every minute
+scheduling interval, the job is requeued at the next matching interval (for example, if a job set to run every minute
 (crontab `* * * * *`) takes 61 seconds to run at minute `x` it will not run at minute `x+1` and will next run at minute
 `x+2`).
 
