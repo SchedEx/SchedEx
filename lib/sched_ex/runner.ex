@@ -86,7 +86,7 @@ defmodule SchedEx.Runner do
       %Timex.AmbiguousDateTime{after: later_time} -> later_time
       time -> time
     end
-    delay = round(DateTime.diff(next, now, :millisecond) / time_scale.speedup())
+    delay = round(max(DateTime.diff(next, now, :millisecond) / time_scale.speedup(), 0))
     Process.send_after(self(), :run, delay)
     next
   end
