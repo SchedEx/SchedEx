@@ -56,7 +56,7 @@ defmodule SchedEx.Runner do
   end
 
   def handle_info(:run, %{func: func, crontab: crontab, scheduled_at: this_time, opts: opts} = state) do
-    if is_function(state.func, 1) do
+    if is_function(func, 1) do
       func.(this_time)
     else
       func.()
