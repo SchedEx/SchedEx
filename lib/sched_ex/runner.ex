@@ -55,11 +55,11 @@ defmodule SchedEx.Runner do
     {:ok, %{func: func, crontab: crontab, scheduled_at: next_time, opts: opts}}
   end
 
-  def handle_info(:run, %{crontab: crontab, scheduled_at: this_time, opts: opts} = state) do
+  def handle_info(:run, %{func: func, crontab: crontab, scheduled_at: this_time, opts: opts} = state) do
     if is_function(state.func, 1) do
-      state.func.(this_time)
+      func.(this_time)
     else
-      state.func.()
+      func.()
     end
     next_time = schedule_next(crontab, opts)
     {:noreply, %{state | scheduled_at: next_time}}
