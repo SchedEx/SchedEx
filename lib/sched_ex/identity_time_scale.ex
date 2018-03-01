@@ -8,4 +8,8 @@ defmodule SchedEx.IdentityTimeScale do
   def speedup do
     1
   end
+
+  def ms_per_tick do
+    1
+  end
 end

@@ -56,6 +56,12 @@ defmodule SchedExTest do
   end
 
   describe "run_in" do
+    defmodule TestRelativeTimeScale do
+      def ms_per_tick do
+        0.001
+      end
+    end
+
     test "runs the m,f,a after the expected delay", context do
       SchedEx.run_in(TestCallee, :append, [context.agent, 1], @sleep_duration)
       Process.sleep(2 * @sleep_duration)
@@ -70,6 +76,12 @@ defmodule SchedExTest do
 
     test "can repeat", context do
       SchedEx.run_in(fn() -> TestCallee.append(context.agent, 1) end, @sleep_duration, repeat: true)
+      Process.sleep(3 * @sleep_duration)
+      assert TestCallee.clear(context.agent) == [1, 1]
+    end
+
+    test "respects timescale", context do
+      SchedEx.run_in(fn() -> TestCallee.append(context.agent, 1) end, 1000 * @sleep_duration, repeat: true, time_scale: TestRelativeTimeScale)
       Process.sleep(3 * @sleep_duration)
       assert TestCallee.clear(context.agent) == [1, 1]
     end

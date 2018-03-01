@@ -45,8 +45,8 @@ defmodule SchedEx.Runner do
 
   def init({func, delay, opts}) when is_integer(delay) do
     Process.flag(:trap_exit, true)
-    Process.send_after(self(), :run, delay)
-    {:ok, %{func: func, delay: delay, opts: opts}}
+    next_time = schedule_next(DateTime.utc_now(), delay, opts)
+    {:ok, %{func: func, delay: delay, scheduled_at: next_time, opts: opts}}
   end
 
   def init({func, %Crontab.CronExpression{} = crontab, opts}) do
@@ -65,11 +65,11 @@ defmodule SchedEx.Runner do
     {:noreply, %{state | scheduled_at: next_time}}
   end
 
-  def handle_info(:run, %{func: func, delay: delay, opts: opts} = state) do
+  def handle_info(:run, %{func: func, delay: delay, scheduled_at: scheduled_at, opts: opts} = state) do
     func.()
     if Keyword.get(opts, :repeat, false) do
-      Process.send_after(self(), :run, delay)
-      {:noreply, state}
+      next_time = schedule_next(scheduled_at, delay, opts)
+      {:noreply, %{state | scheduled_at: next_time}}
     else
       {:stop, :normal, state}
     end
@@ -81,6 +81,16 @@ defmodule SchedEx.Runner do
 
   defp as_crontab(%Crontab.CronExpression{} = crontab), do: {:ok, crontab}
   defp as_crontab(crontab), do: Crontab.CronExpression.Parser.parse(crontab)
+
+  defp schedule_next(%DateTime{} = from, delay, opts) when is_integer(delay) do
+    time_scale = Keyword.get(opts, :time_scale, SchedEx.IdentityTimeScale)
+    delay = round(delay * time_scale.ms_per_tick())
+    next = Timex.shift(from, milliseconds: delay)
+    now = DateTime.utc_now()
+    delay = max(DateTime.diff(next, now, :millisecond), 0)
+    Process.send_after(self(), :run, delay)
+    next
+  end
 
   defp schedule_next(%Crontab.CronExpression{} = crontab, opts) do
     time_scale = Keyword.get(opts, :time_scale, SchedEx.IdentityTimeScale)

@@ -19,22 +19,34 @@ defmodule SchedEx do
   end
 
   @doc """
-  Runs the given module, function and argument in the given number of milliseconds
+  Runs the given module, function and argument in given number of units (this 
+  corresponds to milliseconds unless a custom time_scale is specified)
 
   Supports the following options:
 
   repeat: Whether or not this job should be recurring
+
+  time_scale: A module implementing one method: ms_per_tick/0, which returns an 
+  float number of milliseconds to wait for every unit delay. Used mostly for 
+  speeding up test runs. If not specified, defaults to an identity module which
+  returns a value of 1, such that this method runs the job in 'delay' ms
   """
   def run_in(m, f, a, delay, opts \\ []) when is_atom(m) and is_atom(f) and is_list(a) do
     run_in(fn -> apply(m,f,a) end, delay, opts)
   end
 
   @doc """
-  Runs the given function in given number of milliseconds
+  Runs the given function in given number of units (this corresponds to milliseconds 
+  unless a custom time_scale is specified)
 
   Supports the following options:
 
   repeat: Whether or not this job should be recurring
+
+  time_scale: A module implementing one method: ms_per_tick/0, which returns an 
+  float number of milliseconds to wait for every unit delay. Used mostly for 
+  speeding up test runs. If not specified, defaults to an identity module which
+  returns a value of 1, such that this method runs the job in 'delay' ms
   """
   def run_in(func, delay, opts \\ []) when is_function(func) and is_integer(delay) do
     SchedEx.Runner.run_in(func, delay, opts)
