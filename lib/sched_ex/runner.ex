@@ -65,9 +65,14 @@ defmodule SchedEx.Runner do
     {:noreply, %{state | scheduled_at: next_time}}
   end
 
-  def handle_info(:run, state) do
-    state.func.()
-    {:stop, :normal, state}
+  def handle_info(:run, %{func: func, delay: delay, opts: opts} = state) do
+    func.()
+    if Keyword.get(opts, :repeat, false) do
+      Process.send_after(self(), :run, delay)
+      {:noreply, state}
+    else
+      {:stop, :normal, state}
+    end
   end
 
   def handle_info(:shutdown, state) do

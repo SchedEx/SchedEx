@@ -20,6 +20,10 @@ defmodule SchedEx do
 
   @doc """
   Runs the given module, function and argument in the given number of milliseconds
+
+  Supports the following options:
+
+  repeat: Whether or not this job should be recurring
   """
   def run_in(m, f, a, delay, opts \\ []) when is_atom(m) and is_atom(f) and is_list(a) do
     run_in(fn -> apply(m,f,a) end, delay, opts)
@@ -27,6 +31,10 @@ defmodule SchedEx do
 
   @doc """
   Runs the given function in given number of milliseconds
+
+  Supports the following options:
+
+  repeat: Whether or not this job should be recurring
   """
   def run_in(func, delay, opts \\ []) when is_function(func) and is_integer(delay) do
     SchedEx.Runner.run_in(func, delay, opts)

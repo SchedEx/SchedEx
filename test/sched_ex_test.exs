@@ -68,6 +68,12 @@ defmodule SchedExTest do
       assert TestCallee.clear(context.agent) == [1]
     end
 
+    test "can repeat", context do
+      SchedEx.run_in(fn() -> TestCallee.append(context.agent, 1) end, @sleep_duration, repeat: true)
+      Process.sleep(3 * @sleep_duration)
+      assert TestCallee.clear(context.agent) == [1, 1]
+    end
+
     test "runs immediately in process if the expected delay is non-positive", context do
       {:ok, token} = SchedEx.run_in(TestCallee, :append, [context.agent, 1], -@sleep_duration)
       assert TestCallee.clear(context.agent) == [1]
