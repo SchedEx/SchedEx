@@ -41,10 +41,10 @@ defmodule SchedExTest do
       assert TestCallee.clear(context.agent) == [1]
     end
 
-    test "runs immediately in process if the expected time is in the past", context do
-      {:ok, token} = SchedEx.run_at(TestCallee, :append, [context.agent, 1], Timex.shift(DateTime.utc_now(), milliseconds: -@sleep_duration))
+    test "runs immediately (but not in process) if the expected time is in the past", context do
+      SchedEx.run_at(TestCallee, :append, [context.agent, 1], Timex.shift(DateTime.utc_now(), hours: -100))
+      Process.sleep(@sleep_duration)
       assert TestCallee.clear(context.agent) == [1]
-      assert token == nil
     end
 
     test "is cancellable", context do
@@ -74,6 +74,14 @@ defmodule SchedExTest do
       assert TestCallee.clear(context.agent) == [1]
     end
 
+    test "optionally passes the runtime into the fn", context do
+      now = DateTime.utc_now()
+      expected_time = Timex.shift(now, milliseconds: @sleep_duration)
+      SchedEx.run_in(fn(time) -> TestCallee.append(context.agent, time) end, @sleep_duration, start_time: now)
+      Process.sleep(2 * @sleep_duration)
+      assert TestCallee.clear(context.agent) == [expected_time]
+    end
+
     test "can repeat", context do
       SchedEx.run_in(fn() -> TestCallee.append(context.agent, 1) end, @sleep_duration, repeat: true)
       Process.sleep(3 * @sleep_duration)
@@ -86,10 +94,10 @@ defmodule SchedExTest do
       assert TestCallee.clear(context.agent) == [1, 1]
     end
 
-    test "runs immediately in process if the expected delay is non-positive", context do
-      {:ok, token} = SchedEx.run_in(TestCallee, :append, [context.agent, 1], -@sleep_duration)
+    test "runs immediately (but not in process) if the expected delay is non-positive", context do
+      SchedEx.run_in(TestCallee, :append, [context.agent, 1], -100000)
+      Process.sleep(@sleep_duration)
       assert TestCallee.clear(context.agent) == [1]
-      assert token == nil
     end
 
     test "is cancellable", context do

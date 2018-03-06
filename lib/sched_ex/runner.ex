@@ -8,12 +8,7 @@ defmodule SchedEx.Runner do
   run the given function after the specified delay
   """
   def run_in(func, delay, opts) when is_function(func) and is_integer(delay) do
-    if delay > 0 do
-      GenServer.start_link(__MODULE__, {func, delay, opts})
-    else
-      func.()
-      {:ok, nil}
-    end
+    GenServer.start_link(__MODULE__, {func, delay, opts})
   end
 
   @doc """
@@ -45,7 +40,8 @@ defmodule SchedEx.Runner do
 
   def init({func, delay, opts}) when is_integer(delay) do
     Process.flag(:trap_exit, true)
-    next_time = schedule_next(DateTime.utc_now(), delay, opts)
+    start_time = Keyword.get(opts, :start_time, DateTime.utc_now())
+    next_time = schedule_next(start_time, delay, opts)
     {:ok, %{func: func, delay: delay, scheduled_at: next_time, opts: opts}}
   end
 
@@ -65,10 +61,14 @@ defmodule SchedEx.Runner do
     {:noreply, %{state | scheduled_at: next_time}}
   end
 
-  def handle_info(:run, %{func: func, delay: delay, scheduled_at: scheduled_at, opts: opts} = state) do
-    func.()
+  def handle_info(:run, %{func: func, delay: delay, scheduled_at: this_time, opts: opts} = state) do
+    if is_function(func, 1) do
+      func.(this_time)
+    else
+      func.()
+    end
     if Keyword.get(opts, :repeat, false) do
-      next_time = schedule_next(scheduled_at, delay, opts)
+      next_time = schedule_next(this_time, delay, opts)
       {:noreply, %{state | scheduled_at: next_time}}
     else
       {:stop, :normal, state}

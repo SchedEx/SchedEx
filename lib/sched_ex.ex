@@ -26,6 +26,8 @@ defmodule SchedEx do
 
   repeat: Whether or not this job should be recurring
 
+  start_time: A DateTime to use as the basis to offset from
+
   time_scale: A module implementing one method: ms_per_tick/0, which returns an 
   float number of milliseconds to wait for every unit delay. Used mostly for 
   speeding up test runs. If not specified, defaults to an identity module which
@@ -37,11 +39,14 @@ defmodule SchedEx do
 
   @doc """
   Runs the given function in given number of units (this corresponds to milliseconds 
-  unless a custom time_scale is specified)
+  unless a custom time_scale is specified). If func is of arity 1, the scheduled 
+  execution time will be passed for each invocation
 
   Supports the following options:
 
   repeat: Whether or not this job should be recurring
+
+  start_time: A DateTime to use as the basis to offset from
 
   time_scale: A module implementing one method: ms_per_tick/0, which returns an 
   float number of milliseconds to wait for every unit delay. Used mostly for 
