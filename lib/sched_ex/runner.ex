@@ -80,7 +80,10 @@ defmodule SchedEx.Runner do
   end
 
   defp as_crontab(%Crontab.CronExpression{} = crontab), do: {:ok, crontab}
-  defp as_crontab(crontab), do: Crontab.CronExpression.Parser.parse(crontab)
+  defp as_crontab(crontab) do
+    extended = length(String.split(crontab)) > 5
+    Crontab.CronExpression.Parser.parse(crontab, extended)
+  end
 
   defp schedule_next(%DateTime{} = from, delay, opts) when is_integer(delay) do
     time_scale = Keyword.get(opts, :time_scale, SchedEx.IdentityTimeScale)
