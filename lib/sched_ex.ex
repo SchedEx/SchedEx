@@ -20,7 +20,9 @@ defmodule SchedEx do
 
   @doc """
   Runs the given module, function and argument in given number of units (this 
-  corresponds to milliseconds unless a custom time_scale is specified)
+  corresponds to milliseconds unless a custom time_scale is specified). Any 
+  values in the arguments array which are equal to the magic symbol :sched_ex_scheduled_time
+  are replaced with the scheduled execution time for each invocation
 
   Supports the following options:
 
@@ -34,7 +36,7 @@ defmodule SchedEx do
   returns a value of 1, such that this method runs the job in 'delay' ms
   """
   def run_in(m, f, a, delay, opts \\ []) when is_atom(m) and is_atom(f) and is_list(a) do
-    run_in(fn -> apply(m,f,a) end, delay, opts)
+    run_in(mfa_to_fn(m, f, a), delay, opts)
   end
 
   @doc """
@@ -58,7 +60,9 @@ defmodule SchedEx do
   end
 
   @doc """
-  Runs the given module, function and argument on every occurence of the given crontab
+  Runs the given module, function and argument on every occurence of the given crontab. Any
+  values in the arguments array which are equal to the magic symbol :sched_ex_scheduled_time
+  are replaced with the scheduled execution time for each invocation
 
   Supports the following options:
 
@@ -70,7 +74,7 @@ defmodule SchedEx do
   an identity module which returns 'now', and a factor of 1
   """
   def run_every(m, f, a, crontab, opts \\ []) when is_atom(m) and is_atom(f) and is_list(a) do
-    run_every(fn -> apply(m,f,a) end, crontab, opts)
+    run_every(mfa_to_fn(m, f, a), crontab, opts)
   end
 
   @doc """
@@ -95,5 +99,17 @@ defmodule SchedEx do
   """
   def cancel(token) do
     SchedEx.Runner.cancel(token)
+  end
+
+  defp mfa_to_fn(m, f, args) do
+    fn(time) ->
+      substituted_args = Enum.map(args, fn(arg) ->
+        case arg do
+          :sched_ex_scheduled_time -> time
+          _ -> arg
+        end
+      end)
+      apply(m,f,substituted_args)
+    end
   end
 end

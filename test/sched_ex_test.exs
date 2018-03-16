@@ -74,6 +74,14 @@ defmodule SchedExTest do
       assert TestCallee.clear(context.agent) == [1]
     end
 
+    test "optionally passes the runtime into the m,f,a", context do
+      now = DateTime.utc_now()
+      expected_time = Timex.shift(now, milliseconds: @sleep_duration)
+      SchedEx.run_in(TestCallee, :append, [context.agent, :sched_ex_scheduled_time], @sleep_duration, start_time: now)
+      Process.sleep(2 * @sleep_duration)
+      assert TestCallee.clear(context.agent) == [expected_time]
+    end
+
     test "optionally passes the runtime into the fn", context do
       now = DateTime.utc_now()
       expected_time = Timex.shift(now, milliseconds: @sleep_duration)
@@ -84,13 +92,13 @@ defmodule SchedExTest do
 
     test "can repeat", context do
       SchedEx.run_in(fn() -> TestCallee.append(context.agent, 1) end, @sleep_duration, repeat: true)
-      Process.sleep(3 * @sleep_duration)
+      Process.sleep(round(2.5 * @sleep_duration))
       assert TestCallee.clear(context.agent) == [1, 1]
     end
 
     test "respects timescale", context do
       SchedEx.run_in(fn() -> TestCallee.append(context.agent, 1) end, 1000 * @sleep_duration, repeat: true, time_scale: TestRelativeTimeScale)
-      Process.sleep(3 * @sleep_duration)
+      Process.sleep(round(2.5 * @sleep_duration))
       assert TestCallee.clear(context.agent) == [1, 1]
     end
 
@@ -168,6 +176,16 @@ defmodule SchedExTest do
       SchedEx.run_every(fn() -> TestCallee.append(context.agent, 1) end, crontab, time_scale: TestTimeScale)
       Process.sleep(2000)
       assert TestCallee.clear(context.agent) == [1, 1]
+    end
+
+    test "optionally passes the runtime into the m,f,a", context do
+      {:ok, _} = start_supervised({TestTimeScale, {Timex.now("UTC"), 60}}, restart: :temporary)
+      {:ok, crontab} = Crontab.CronExpression.Parser.parse("* * * * *")
+      {:ok, expected_naive_time} = Crontab.Scheduler.get_next_run_date(crontab, NaiveDateTime.utc_now())
+      expected_time = Timex.to_datetime(expected_naive_time, "UTC")
+      SchedEx.run_every(TestCallee, :append, [context.agent, :sched_ex_scheduled_time], "* * * * *", time_scale: TestTimeScale)
+      Process.sleep(1000)
+      assert TestCallee.clear(context.agent) == [expected_time]
     end
 
     test "optionally passes the runtime into the fn", context do
