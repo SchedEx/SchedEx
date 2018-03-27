@@ -20,17 +20,15 @@ defmodule SchedEx do
 
   @doc """
   Runs the given module, function and argument in given number of units (this 
-  corresponds to milliseconds unless a custom time_scale is specified). Any 
-  values in the arguments array which are equal to the magic symbol :sched_ex_scheduled_time
+  corresponds to milliseconds unless a custom `time_scale` is specified). Any 
+  values in the arguments array which are equal to the magic symbol `:sched_ex_scheduled_time`
   are replaced with the scheduled execution time for each invocation
 
   Supports the following options:
 
-  repeat: Whether or not this job should be recurring
-
-  start_time: A DateTime to use as the basis to offset from
-
-  time_scale: A module implementing one method: ms_per_tick/0, which returns an 
+  * `repeat`: Whether or not this job should be recurring
+  * `start_time`: A `DateTime` to use as the basis to offset from
+  * `time_scale`: A module implementing one method: `ms_per_tick/0`, which returns an 
   float number of milliseconds to wait for every unit delay. Used mostly for 
   speeding up test runs. If not specified, defaults to an identity module which
   returns a value of 1, such that this method runs the job in 'delay' ms
@@ -41,16 +39,14 @@ defmodule SchedEx do
 
   @doc """
   Runs the given function in given number of units (this corresponds to milliseconds 
-  unless a custom time_scale is specified). If func is of arity 1, the scheduled 
+  unless a custom `time_scale` is specified). If func is of arity 1, the scheduled 
   execution time will be passed for each invocation
 
   Supports the following options:
 
-  repeat: Whether or not this job should be recurring
-
-  start_time: A DateTime to use as the basis to offset from
-
-  time_scale: A module implementing one method: ms_per_tick/0, which returns an 
+  * `repeat`: Whether or not this job should be recurring
+  * `start_time`: A `DateTime` to use as the basis to offset from
+  * `time_scale`: A module implementing one method: `ms_per_tick/0`, which returns an 
   float number of milliseconds to wait for every unit delay. Used mostly for 
   speeding up test runs. If not specified, defaults to an identity module which
   returns a value of 1, such that this method runs the job in 'delay' ms
@@ -61,16 +57,15 @@ defmodule SchedEx do
 
   @doc """
   Runs the given module, function and argument on every occurence of the given crontab. Any
-  values in the arguments array which are equal to the magic symbol :sched_ex_scheduled_time
+  values in the arguments array which are equal to the magic symbol `:sched_ex_scheduled_time`
   are replaced with the scheduled execution time for each invocation
 
   Supports the following options:
 
-  timezone: A string timezone identifier ("America/Chicago") specifying the timezone within which 
-  the crontab should be interpreted. If not specified, defaults to "UTC"
-
-  time_scale: A module implementing two methods: now/1, which returns the current time in the specified timezone, and 
-  speedup/0, which returns an integer factor to speed up delays by. Used mostly for speeding up test runs. If not specified, defaults to 
+  * `timezone`: A string timezone identifier (`America/Chicago`) specifying the timezone within which 
+  the crontab should be interpreted. If not specified, defaults to `UTC`
+  * `time_scale`: A module implementing two methods: `now/1`, which returns the current time in the specified timezone, and 
+  `speedup/0`, which returns an integer factor to speed up delays by. Used mostly for speeding up test runs. If not specified, defaults to 
   an identity module which returns 'now', and a factor of 1
   """
   def run_every(m, f, a, crontab, opts \\ []) when is_atom(m) and is_atom(f) and is_list(a) do
@@ -83,11 +78,10 @@ defmodule SchedEx do
 
   Supports the following options:
 
-  timezone: A string timezone identifier ("America/Chicago") specifying the timezone within which 
-  the crontab should be interpreted. If not specified, defaults to "UTC"
-
-  time_scale: A module implementing two methods: now/1, which returns the current time in the specified timezone, and 
-  speedup/0, which returns an integer factor to speed up delays by. Used mostly for speeding up test runs. If not specified, defaults to 
+  * `timezone`: A string timezone identifier (`America/Chicago`) specifying the timezone within which 
+  the crontab should be interpreted. If not specified, defaults to `UTC`
+  * `time_scale`: A module implementing two methods: `now/1`, which returns the current time in the specified timezone, and 
+  `speedup/0`, which returns an integer factor to speed up delays by. Used mostly for speeding up test runs. If not specified, defaults to 
   an identity module which returns 'now', and a factor of 1
   """
   def run_every(func, crontab, opts \\ []) when is_function(func) do
