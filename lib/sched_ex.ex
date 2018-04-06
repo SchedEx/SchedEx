@@ -101,6 +101,18 @@ defmodule SchedEx do
     SchedEx.Runner.cancel(token)
   end
 
+  @doc """
+  Returns stats on the given job. Stats are returned for:
+
+  * `scheduling_delay`: The delay between when the job was scheduled to execute, and the time
+  it actually was executed. Value specified in microseconds.
+
+  * `execution_time`: The amount of time the job spent executing. Value specified in microseconds.
+  """
+  def stats(token) do
+    SchedEx.Runner.stats(token)
+  end
+
   defp mfa_to_fn(m, f, args) do
     fn(time) ->
       substituted_args = Enum.map(args, fn(arg) ->

@@ -316,4 +316,37 @@ defmodule SchedExTest do
       refute Process.alive?(timer)
     end
   end
+
+  describe "stats" do
+    test "returns stats on the running job", context do
+      {:ok, token} = SchedEx.run_in(TestCallee, :append, [context.agent, 1], @sleep_duration, repeat: true)
+      Process.sleep(@sleep_duration)
+      %SchedEx.Stats{
+        scheduling_delay: %SchedEx.Stats.Value{
+          min: sched_min,
+          max: sched_max,
+          avg: sched_avg,
+          count: sched_count
+        },
+        execution_time: %SchedEx.Stats.Value{
+          min: exec_min,
+          max: exec_max,
+          avg: exec_avg,
+          count: exec_count
+        }
+      } = SchedEx.stats(token)
+
+      assert sched_count == 1
+      assert sched_avg > 1.0 # Assume that scheduling delay is 1..2000 usec
+      assert sched_avg < 2000.0
+      assert sched_min == sched_avg
+      assert sched_max == sched_avg
+
+      assert exec_count == 1
+      assert exec_avg > 1.0 # Assume that execution time is 1..200 usec
+      assert exec_avg < 200.0
+      assert exec_min == exec_avg
+      assert exec_max == exec_avg
+    end
+  end
 end
