@@ -163,6 +163,13 @@ defmodule SchedExTest do
       assert TestCallee.clear(context.agent) == [1, 1]
     end
 
+    test "respects the repeat flag", context do
+      {:ok, _} = start_supervised({TestTimeScale, {Timex.now("UTC"), 60}}, restart: :temporary)
+      SchedEx.run_every(fn() -> TestCallee.append(context.agent, 1) end, "* * * * *", repeat: false, time_scale: TestTimeScale)
+      Process.sleep(2000)
+      assert TestCallee.clear(context.agent) == [1]
+    end
+
     test "supports parsing extended strings", context do
       {:ok, _} = start_supervised({TestTimeScale, {Timex.now("UTC"), 1}}, restart: :temporary)
       SchedEx.run_every(fn() -> TestCallee.append(context.agent, 1) end, "* * * * * * *", time_scale: TestTimeScale)

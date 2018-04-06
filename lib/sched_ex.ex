@@ -44,7 +44,7 @@ defmodule SchedEx do
 
   Supports the following options:
 
-  * `repeat`: Whether or not this job should be recurring
+  * `repeat`: Whether or not this job should be recurring. Defaults to false
   * `start_time`: A `DateTime` to use as the basis to offset from
   * `time_scale`: A module implementing one method: `ms_per_tick/0`, which returns an 
   float number of milliseconds to wait for every unit delay. Used mostly for 
@@ -52,7 +52,7 @@ defmodule SchedEx do
   returns a value of 1, such that this method runs the job in 'delay' ms
   """
   def run_in(func, delay, opts \\ []) when is_function(func) and is_integer(delay) do
-    SchedEx.Runner.run_in(func, delay, opts)
+    SchedEx.Runner.run(func, delay, opts)
   end
 
   @doc """
@@ -83,9 +83,15 @@ defmodule SchedEx do
   * `time_scale`: A module implementing two methods: `now/1`, which returns the current time in the specified timezone, and 
   `speedup/0`, which returns an integer factor to speed up delays by. Used mostly for speeding up test runs. If not specified, defaults to 
   an identity module which returns 'now', and a factor of 1
+  * `repeat`: Whether or not this job should be recurring. If false, only the next matching time of the crontab is executed. Defaults to true
   """
   def run_every(func, crontab, opts \\ []) when is_function(func) do
-    SchedEx.Runner.run_every(func, crontab, opts)
+    case as_crontab(crontab) do
+      {:ok, expression} ->
+        SchedEx.Runner.run(func, expression, Keyword.put_new(opts, :repeat, true))
+      {:error, _} = error ->
+        error
+    end
   end
 
   @doc """
@@ -105,5 +111,11 @@ defmodule SchedEx do
       end)
       apply(m,f,substituted_args)
     end
+  end
+
+  defp as_crontab(%Crontab.CronExpression{} = crontab), do: {:ok, crontab}
+  defp as_crontab(crontab) do
+    extended = length(String.split(crontab)) > 5
+    Crontab.CronExpression.Parser.parse(crontab, extended)
   end
 end
