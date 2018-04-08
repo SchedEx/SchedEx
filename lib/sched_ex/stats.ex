@@ -1,4 +1,6 @@
 defmodule SchedEx.Stats do
+  @moduledoc false
+
   alias SchedEx.Stats.Value
 
   defstruct scheduling_delay: %Value{}, quantization_error: %Value{}, execution_time: %Value{}

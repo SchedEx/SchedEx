@@ -1,4 +1,6 @@
 defmodule SchedEx.Stats.Value do
+  @moduledoc false
+
   defstruct min: nil, max: nil, avg: nil, count: 0, histogram: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
 
   @num_periods 50
