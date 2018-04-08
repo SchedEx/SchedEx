@@ -105,7 +105,11 @@ defmodule SchedEx do
   Returns stats on the given job. Stats are returned for:
 
   * `scheduling_delay`: The delay between when the job was scheduled to execute, and the time
-  it actually was executed. Value specified in microseconds.
+  it actually was executed. Based on the quantized scheduled start, and so does not include quantization error. Value specified in microseconds.
+
+  * `quantization_error`: Erlang is only capable of scheduling future calls with millisecond precision, so there is some 
+  inevitable precision lost between when the job would be scheduled in a perfect world, and how well Erlang is able to 
+  schedule the job (ie: to the closest millisecond). This error value captures that difference. Value specified in microseconds.
 
   * `execution_time`: The amount of time the job spent executing. Value specified in microseconds.
   """

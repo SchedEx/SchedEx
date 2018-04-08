@@ -40,16 +40,16 @@ defmodule SchedEx.Runner do
   def init({func, delay_definition, opts}) do
     Process.flag(:trap_exit, true)
     start_time = Keyword.get(opts, :start_time, DateTime.utc_now())
-    next_time = schedule_next(start_time, delay_definition, opts)
+    {next_time, quantized_next_time} = schedule_next(start_time, delay_definition, opts)
     stats = %SchedEx.Stats{}
-    {:ok, %{func: func, delay_definition: delay_definition, scheduled_at: next_time, stats: stats, opts: opts}}
+    {:ok, %{func: func, delay_definition: delay_definition, scheduled_at: next_time, quantized_scheduled_at: quantized_next_time, stats: stats, opts: opts}}
   end
 
   def handle_call(:stats, _from, %{stats: stats} = state) do
     {:reply, stats, state}
   end
 
-  def handle_info(:run, %{func: func, delay_definition: delay_definition, scheduled_at: this_time, stats: stats, opts: opts} = state) do
+  def handle_info(:run, %{func: func, delay_definition: delay_definition, scheduled_at: this_time, quantized_scheduled_at: quantized_this_time, stats: stats, opts: opts} = state) do
     start_time = DateTime.utc_now()
     if is_function(func, 1) do
       func.(this_time)
@@ -57,10 +57,10 @@ defmodule SchedEx.Runner do
       func.()
     end
     end_time = DateTime.utc_now()
-    stats = SchedEx.Stats.update(stats, this_time, start_time, end_time)
+    stats = SchedEx.Stats.update(stats, this_time, quantized_this_time, start_time, end_time)
     if Keyword.get(opts, :repeat, false) do
-      next_time = schedule_next(this_time, delay_definition, opts)
-      {:noreply, %{state | scheduled_at: next_time, stats: stats}}
+      {next_time, quantized_next_time} = schedule_next(this_time, delay_definition, opts)
+      {:noreply, %{state | scheduled_at: next_time, quantized_scheduled_at: quantized_next_time, stats: stats}}
     else
       {:stop, :normal, %{state | stats: stats}}
     end
@@ -77,7 +77,7 @@ defmodule SchedEx.Runner do
     now = DateTime.utc_now()
     delay = max(DateTime.diff(next, now, :millisecond), 0)
     Process.send_after(self(), :run, delay)
-    next
+    {next, Timex.shift(now, milliseconds: delay)}
   end
 
   defp schedule_next(_from, %Crontab.CronExpression{} = crontab, opts) do
@@ -91,6 +91,6 @@ defmodule SchedEx.Runner do
     end
     delay = round(max(DateTime.diff(next, now, :millisecond) / time_scale.speedup(), 0))
     Process.send_after(self(), :run, delay)
-    next
+    {next, Timex.shift(DateTime.utc_now(), milliseconds: delay)}
   end
 end
