@@ -1,5 +1,5 @@
 defmodule SchedEx.Stats.Value do
-  defstruct min: nil, max: nil, avg: nil, count: 0, histogram: [0,0,0,0,0,0,0,0,0,0]
+  defstruct min: nil, max: nil, avg: nil, count: 0, histogram: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
 
   @num_periods 50
   @weight_factor 2 / (@num_periods + 1)
