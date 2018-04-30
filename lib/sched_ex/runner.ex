@@ -40,9 +40,13 @@ defmodule SchedEx.Runner do
   def init({func, delay_definition, opts}) do
     Process.flag(:trap_exit, true)
     start_time = Keyword.get(opts, :start_time, DateTime.utc_now())
-    {next_time, quantized_next_time} = schedule_next(start_time, delay_definition, opts)
-    stats = %SchedEx.Stats{}
-    {:ok, %{func: func, delay_definition: delay_definition, scheduled_at: next_time, quantized_scheduled_at: quantized_next_time, stats: stats, opts: opts}}
+    case schedule_next(start_time, delay_definition, opts) do
+      {%DateTime{} = next_time, quantized_next_time} ->
+        stats = %SchedEx.Stats{}
+        {:ok, %{func: func, delay_definition: delay_definition, scheduled_at: next_time, quantized_scheduled_at: quantized_next_time, stats: stats, opts: opts}}
+      {:error, _} ->
+        :ignore
+    end
   end
 
   def handle_call(:stats, _from, %{stats: stats} = state) do
@@ -59,8 +63,12 @@ defmodule SchedEx.Runner do
     end_time = DateTime.utc_now()
     stats = SchedEx.Stats.update(stats, this_time, quantized_this_time, start_time, end_time)
     if Keyword.get(opts, :repeat, false) do
-      {next_time, quantized_next_time} = schedule_next(this_time, delay_definition, opts)
-      {:noreply, %{state | scheduled_at: next_time, quantized_scheduled_at: quantized_next_time, stats: stats}}
+      case schedule_next(this_time, delay_definition, opts) do
+        {%DateTime{} = next_time, quantized_next_time} ->
+          {:noreply, %{state | scheduled_at: next_time, quantized_scheduled_at: quantized_next_time, stats: stats}}
+        _ ->
+          {:stop, :normal, %{state | stats: stats}}
+      end
     else
       {:stop, :normal, %{state | stats: stats}}
     end
@@ -84,13 +92,17 @@ defmodule SchedEx.Runner do
     time_scale = Keyword.get(opts, :time_scale, SchedEx.IdentityTimeScale)
     timezone = Keyword.get(opts, :timezone, "UTC")
     now = time_scale.now(timezone)
-    {:ok, naive_next} = Crontab.Scheduler.get_next_run_date(crontab, DateTime.to_naive(now))
-    next = case Timex.to_datetime(naive_next, timezone) do
-      %Timex.AmbiguousDateTime{after: later_time} -> later_time
-      time -> time
+    case Crontab.Scheduler.get_next_run_date(crontab, DateTime.to_naive(now)) do
+      {:ok, naive_next} ->
+        next = case Timex.to_datetime(naive_next, timezone) do
+          %Timex.AmbiguousDateTime{after: later_time} -> later_time
+          time -> time
+        end
+        delay = round(max(DateTime.diff(next, now, :millisecond) / time_scale.speedup(), 0))
+        Process.send_after(self(), :run, delay)
+        {next, Timex.shift(DateTime.utc_now(), milliseconds: delay)}
+      {:error, _} = error ->
+        error
     end
-    delay = round(max(DateTime.diff(next, now, :millisecond) / time_scale.speedup(), 0))
-    Process.send_after(self(), :run, delay)
-    {next, Timex.shift(DateTime.utc_now(), milliseconds: delay)}
   end
 end

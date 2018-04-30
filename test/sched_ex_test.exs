@@ -165,9 +165,29 @@ defmodule SchedExTest do
 
     test "respects the repeat flag", context do
       {:ok, _} = start_supervised({TestTimeScale, {Timex.now("UTC"), 60}}, restart: :temporary)
-      SchedEx.run_every(fn() -> TestCallee.append(context.agent, 1) end, "* * * * *", repeat: false, time_scale: TestTimeScale)
+      {:ok, pid} = SchedEx.run_every(fn() -> TestCallee.append(context.agent, 1) end, "* * * * *", repeat: false, time_scale: TestTimeScale)
       Process.sleep(2000)
       assert TestCallee.clear(context.agent) == [1]
+      refute Process.alive?(pid)
+    end
+
+    test "terminates after running if the crontab never fires again", context do
+      now = Timex.now("UTC")
+      then = Timex.shift(now, seconds: 30)
+      crontab = Crontab.CronExpression.Parser.parse!("#{then.second} #{then.minute} #{then.hour} #{then.day} #{then.month} * #{then.year}", true)
+      {:ok, _} = start_supervised({TestTimeScale, {now, 60}}, restart: :temporary)
+      {:ok, pid} = SchedEx.run_every(fn() -> TestCallee.append(context.agent, 1) end, crontab, time_scale: TestTimeScale)
+      Process.sleep(2000)
+      assert TestCallee.clear(context.agent) == [1]
+      refute Process.alive?(pid)
+    end
+
+    test "doesn't start up if the crontab never fires in the future" do
+      now = Timex.now("UTC")
+      then = Timex.shift(now, seconds: -30)
+      crontab = Crontab.CronExpression.Parser.parse!("#{then.second} #{then.minute} #{then.hour} #{then.day} #{then.month} * #{then.year}", true)
+
+      assert SchedEx.run_every(fn() -> :ok end, crontab) == :ignore
     end
 
     test "supports parsing extended strings", context do
