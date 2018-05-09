@@ -28,10 +28,10 @@ defmodule SchedEx do
 
   * `repeat`: Whether or not this job should be recurring
   * `start_time`: A `DateTime` to use as the basis to offset from
-  * `time_scale`: A module implementing one method: `ms_per_tick/0`, which returns an 
-  float number of milliseconds to wait for every unit delay. Used mostly for 
-  speeding up test runs. If not specified, defaults to an identity module which
-  returns a value of 1, such that this method runs the job in 'delay' ms
+  * `time_scale`: A module implementing one method: `speedup/0`, which returns a
+  float factor to speed up delays by. Used mostly for speeding up test runs. 
+  If not specified, defaults to an identity module which returns a value of 1, 
+  such that this method runs the job in 'delay' ms
   """
   def run_in(m, f, a, delay, opts \\ []) when is_atom(m) and is_atom(f) and is_list(a) do
     run_in(mfa_to_fn(m, f, a), delay, opts)
@@ -46,10 +46,10 @@ defmodule SchedEx do
 
   * `repeat`: Whether or not this job should be recurring. Defaults to false
   * `start_time`: A `DateTime` to use as the basis to offset from
-  * `time_scale`: A module implementing one method: `ms_per_tick/0`, which returns an 
-  float number of milliseconds to wait for every unit delay. Used mostly for 
-  speeding up test runs. If not specified, defaults to an identity module which
-  returns a value of 1, such that this method runs the job in 'delay' ms
+  * `time_scale`: A module implementing one method: `speedup/0`, which returns a
+  float factor to speed up delays by. Used mostly for speeding up test runs. 
+  If not specified, defaults to an identity module which returns a value of 1, 
+  such that this method runs the job in 'delay' ms
   """
   def run_in(func, delay, opts \\ []) when is_function(func) and is_integer(delay) do
     SchedEx.Runner.run(func, delay, opts)
@@ -65,7 +65,7 @@ defmodule SchedEx do
   * `timezone`: A string timezone identifier (`America/Chicago`) specifying the timezone within which 
   the crontab should be interpreted. If not specified, defaults to `UTC`
   * `time_scale`: A module implementing two methods: `now/1`, which returns the current time in the specified timezone, and 
-  `speedup/0`, which returns an integer factor to speed up delays by. Used mostly for speeding up test runs. If not specified, defaults to 
+  `speedup/0`, which returns a float factor to speed up delays by. Used mostly for speeding up test runs. If not specified, defaults to 
   an identity module which returns 'now', and a factor of 1
   """
   def run_every(m, f, a, crontab, opts \\ []) when is_atom(m) and is_atom(f) and is_list(a) do

@@ -23,6 +23,45 @@ defmodule SchedExTest do
     end
   end
 
+  defmodule TestTimeScale do
+    use GenServer
+
+    def start_link(args) do
+      GenServer.start_link(__MODULE__, args, name: __MODULE__)
+    end
+
+    def now(timezone) do
+      GenServer.call(__MODULE__, {:now, timezone})
+    end
+
+    def speedup do
+      GenServer.call(__MODULE__, {:speedup})
+    end
+
+    def init({base_time, speedup}) do
+      {:ok, %{base_time: base_time, time_0: Timex.now(), speedup: speedup}}
+    end
+
+    def handle_call(
+          {:now, timezone},
+          _from,
+          %{base_time: base_time, time_0: time_0, speedup: speedup} = state
+        ) do
+      diff = DateTime.diff(Timex.now(), time_0, :millisecond) * speedup
+
+      now =
+        base_time
+        |> Timex.shift(milliseconds: diff)
+        |> Timex.Timezone.convert(timezone)
+
+      {:reply, now, state}
+    end
+
+    def handle_call({:speedup}, _from, %{speedup: speedup} = state) do
+      {:reply, speedup, state}
+    end
+  end
+
   setup do
     {:ok, agent} = start_supervised(TestCallee)
     {:ok, agent: agent}
@@ -56,12 +95,6 @@ defmodule SchedExTest do
   end
 
   describe "run_in" do
-    defmodule TestRelativeTimeScale do
-      def ms_per_tick do
-        0.001
-      end
-    end
-
     test "runs the m,f,a after the expected delay", context do
       SchedEx.run_in(TestCallee, :append, [context.agent, 1], @sleep_duration)
       Process.sleep(2 * @sleep_duration)
@@ -98,6 +131,7 @@ defmodule SchedExTest do
 
     test "respects timescale", context do
       SchedEx.run_in(fn() -> TestCallee.append(context.agent, 1) end, 1000 * @sleep_duration, repeat: true, time_scale: TestRelativeTimeScale)
+      {:ok, _} = start_supervised({TestTimeScale, {Timex.now("UTC"), 1000}}, restart: :temporary)
       Process.sleep(round(2.5 * @sleep_duration))
       assert TestCallee.clear(context.agent) == [1, 1]
     end
@@ -117,38 +151,6 @@ defmodule SchedExTest do
   end
 
   describe "run_every" do
-    defmodule TestTimeScale do
-      use GenServer
-
-      def start_link(args) do
-        GenServer.start_link(__MODULE__, args, name: __MODULE__)
-      end
-
-      def now(timezone) do
-        GenServer.call(__MODULE__, {:now, timezone})
-      end
-
-      def speedup do
-        GenServer.call(__MODULE__, {:speedup})
-      end
-
-      def init({base_time, speedup}) do
-        {:ok, %{base_time: base_time, time_0: Timex.now(), speedup: speedup}}
-      end
-
-      def handle_call({:now, timezone}, _from, %{base_time: base_time, time_0: time_0, speedup: speedup} = state) do
-        diff = DateTime.diff(Timex.now(), time_0, :millisecond) * speedup
-        now = base_time
-              |> Timex.shift(milliseconds: diff)
-              |> Timex.Timezone.convert(timezone)
-        {:reply, now, state}
-      end
-
-      def handle_call({:speedup}, _from, %{speedup: speedup} = state) do
-        {:reply, speedup, state}
-      end
-    end
-
     test "runs the m,f,a per the given crontab", context do
       {:ok, _} = start_supervised({TestTimeScale, {Timex.now("UTC"), 60}}, restart: :temporary)
       SchedEx.run_every(TestCallee, :append, [context.agent, 1], "* * * * *", time_scale: TestTimeScale)

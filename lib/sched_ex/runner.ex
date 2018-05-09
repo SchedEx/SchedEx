@@ -80,7 +80,7 @@ defmodule SchedEx.Runner do
 
   defp schedule_next(%DateTime{} = from, delay, opts) when is_integer(delay) do
     time_scale = Keyword.get(opts, :time_scale, SchedEx.IdentityTimeScale)
-    delay = round(delay * time_scale.ms_per_tick())
+    delay = round(delay / time_scale.speedup())
     next = Timex.shift(from, milliseconds: delay)
     now = DateTime.utc_now()
     delay = max(DateTime.diff(next, now, :millisecond), 0)
