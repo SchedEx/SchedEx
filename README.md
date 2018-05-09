@@ -3,8 +3,8 @@
 [![Build Status](https://travis-ci.org/SchedEx/SchedEx.svg?branch=master)](https://travis-ci.org/SchedEx/SchedEx)
 [![Inline docs](http://inch-ci.org/github/SchedEx/SchedEx.svg?branch=master&style=flat)](http://inch-ci.org/github/SchedEx/SchedEx)
 
-SchedEx is a simple yet deceptively powerful scheduling library for Elixir. Though it is almost trivially simple by design, it
-enables a number of very powerful use cases to be accomplished with very little effort.
+SchedEx is a simple yet deceptively powerful scheduling library for Elixir. Though it is almost trivially simple by
+design, it enables a number of very powerful use cases to be accomplished with very little effort.
 
 SchedEx is written by [Mat Trudel](http://github.com/mtrudel), and development is generously supported by the fine folks
 at [FunnelCloud](http://funnelcloud.io).
@@ -13,8 +13,13 @@ For usage details, please refer to the [documentation](https://hexdocs.pm/sched_
 
 # Basic Usage
 
-In a supervised context `SchedEx.run_every` is the entry point most commonly used. Typically, jobs which you wish to
-run on a regular basis will be started in your `application.ex` file like so:
+In most contexts `SchedEx.run_every` is the function most commonly used. There are two typical use cases:
+
+### Static Configuration
+
+This approach is useful when you want SchedEx to manage jobs whose configuration is static. At FunnelCloud, we use this 
+approach to run things like our hourly reports, cleanup tasks and such.  Typically, you will start jobs inside your
+`application.ex` file:
 
 ```elixir
 defmodule Example.Application do
@@ -42,6 +47,37 @@ This will cause the corresponding methods to be run according to the specified c
 also take down the SchedEx process which ran them (SchedEx does not provide supervision by design). Your application's
 Supervisor will then restart the relevant SchedEx process, which will continue to run according to its crontab entry.
 
+### Dynamically Scheduled Tasks
+
+SchedEx is especially suited to running tasks which run on a schedule and may be dynamically configured by the user. 
+For example, at FunnelCloud we have a `ScheduledTask` Ecto schema with a string field called `crontab`. At startup our
+`scheduled_task` application reads entries from this table, determines the `module, function, argument` which
+should be invoked when the task comes due, and adds a SchedEx job to a supervisor:
+
+```elixir
+def start_scheduled_tasks(sup, scheduled_tasks) do
+  scheduled_tasks
+  |> Enum.map(&child_spec_for_scheduled_task/1)
+  |> Enum.map(&(DynamicSupervisor.start_child(sup, &1)))
+end
+
+defp child_spec_for_scheduled_task(%{ScheduledTask{id: id, crontab: crontab} = task) do
+  %{id: "scheduled-task-#{id}", start: {SchedEx, :run_every, mfa_for_task(task) ++ [crontab]}}
+end
+
+defp mfa_for_task(task) do
+  # Logic that returns the [m, f, a] that should be invoked when task comes due
+  [IO, :puts, ["Hello, scheduled task: #{inspect task}"]]
+end
+```
+
+This will start one SchedEx process per `ScheduledTask`, all supervised within a `DynamicSupervisor`. If either SchedEx or
+the invoked function crashes `DynamicSupervisor` will restart it, making this approach robust to failures anywhere in the
+application. Note that the above is somewhat simplified - in production we have some additional logic to handle
+starting / stopping / reloading tasks on user change.
+
+## Other Functions
+
 In addition to `SchedEx.run_every`, SchedEx provides two other methods which serve to schedule jobs; `SchedEx.run_at`,
 and `SchedEx.run_in`. As the names suggest, `SchedEx.run_at` takes a `DateTime` struct which indicates the time at which
 the job should be executed, and `SchedEx.run_in` takes a duration in integer milliseconds from the time the function is
@@ -53,57 +89,76 @@ error}` on error). The returned pid can be passed to `SchedEx.cancel` to cancel 
 
 ## Crontab details
 
+SchedEx uses the [crontab](https://github.com/jshmrtn/crontab) library to parse crontab strings. If it is unable to
+parse the given crontab string, an error is returned from the `SchedEx.run_every` call and no jobs are scheduled.
+
+Buiding on the support provided by the crontab library, SchedEx supports *extended* crontabs. Such crontabs have
+7 segments instead of the usual 5; one is added to the beginning of the crontab and expresses a seconds value, and one
+added to the end expresses a year value. As such, it's possible to specify a unique instant down to the second, for
+example:
+
+```
+50 59 23 31 12 * 1999     # You'd better be getting ready to party
+```
+
 Jobs scheduled via `SchedEx.run_every` are implicitly recurring; they continue to to execute according to the crontab
 until `SchedEx.cancel/1` is called or the original calling process terminates. If job execution takes longer than the
 scheduling interval, the job is requeued at the next matching interval (for example, if a job set to run every minute
 (crontab `* * * * *`) takes 61 seconds to run at minute `x` it will not run at minute `x+1` and will next run at minute
 `x+2`).
 
-SchedEx uses the [crontab](https://github.com/jshmrtn/crontab) library to parse crontab strings. If it is unable to
-parse the given crontab string, an error is returned from the `SchedEx.run_every` call and no jobs are scheduled.
+## Testing
 
-# Unsupervised Usage
+SchedEx has a feature called *TimeScales* which help provide a performant and high parity environment for testing
+scheduled code. When invoking `SchedEx.run_every` or `SchedEx.run_in`, you can pass an optional `time_scale` parameter
+which allows you to change the speed at which time runs within SchedEx. This allows you to run an entire day (or longer)
+worth of scheduling time in a much shorter amount of real time. For example:
 
-## Event Sourcing
+```elixir
+defmodule ExampleTest do
+  use ExUnit.Case
 
-SchedEx is particularly suited to use in an event sourced architecture since — contrary to OTP idioms — it deliberately
-does not supervise scheduled tasks.  Scheduled tasks are created and implicitly managed directly within the task which
-creates them, and are simple GenServer instances behind the scenes. If the calling task later crashes, it takes down any
-scheduled tasks along with it. Similarly, if a scheduled task crashes, it takes the creating task down with it (the
-creating task can choose to handle termination explicitly if needed). Though this design may seem lacking, as it turns
-out this is almost always what you want when event sourcing, as the scheduling of such jobs is simply a part of the
-state your application builds out from persistent storage. Because you're always able to recreate your current running
-state from persistent storage the problem of managing the merging or descheduling of of existing timers on startup after
-a crash goes away, and in fact the least error-prone thing to do in this scenario is to simply throw all your timers on
-the floor and build them up again as needed.
+  defmodule AgentHelper do
+    def set(agent, value) do
+      Agent.update(agent, fn _ -> value end)
+    end
 
-## Unsupervised Usage
+    def get(agent) do
+      Agent.get(agent, & &1)
+    end
+  end
 
-Given the above rationalization, there are many cases where you may want to schedule an event in a non-durable manner,
-so that the timer is automatically cancelled if the creating process stops. This can easily be accomplished by calling
-`SchedEx.run_*` methods directly (the `SchedEx.run_in` variant is particularly well suited to this use case, when you
-want to set an expiry timer based on some asyncronous event). Such usage looks like so:
+  defmodule TestTimeScale do
+    def now(_) do
+      DateTime.utc_now()
+    end
 
-``` elixir
-# Scheduling for a particular date
-{:ok, date, _} = DateTime.from_iso8601("2018-01-01T00:00:00Z")
-SchedEx.run_at(IO, :write, ["Happy New Year!"], date)
+    def speedup do
+      86400
+    end
+  end
 
-# Scheduling with a given delay
-SchedEx.run_in(IO, :write, ["Hello, delayed world!"], 10000)
+  test "updates the agent at 10am every morning" do
+    {:ok, agent} = start_supervised({Agent, fn -> nil end})
 
-# Scheduling with a crontab string
-SchedEx.run_every(IO, :write, ["Hello, even-minute world!"], "*/2 * * * *")
+    SchedEx.run_every(AgentHelper, :set, [agent, :sched_ex_scheduled_time], "* 10 * * *", time_scale: TestTimeScale)
 
-# You can also pass a fn
-SchedEx.run_in(fn() -> IO.write("Hello, delayed world!") end, 10000)
+    # Let SchedEx run through a day's worth of scheduling time
+    Process.sleep(1000)
+
+    expected_time = Timex.now() |> Timex.beginning_of_day() |> Timex.shift(hours: 34)
+    assert DateTime.diff(AgentHelper.get(agent), expected_time) == 0
+  end
+end
 ```
 
-It is crucial to understand that SchedEx deliberately does *not* supervise or manage scheduled jobs in any way; the
-process instances which back scheduling are simple GenServers which are linked directly to the calling process and are set to trap on exit. What
-this means in practice is that if the calling process crashes, all pending jobs scheduled by that process will be
-implicitly canceled, and if a job crashes it will bring down the calling process with it (unless the calling process
-specifically catches this case as in the case of a Supervisor).
+will run through an entire day's worth of scheduling time in one second, and allows us to test against the expectations
+of the called function quickly, while maintaining near-perfect parity with development. The only thing that changes in
+the test environment is the passing of a `time_scale`; all other code is exactly as it is in production. 
+
+Note that in the above test, the atom `:sched_ex_scheduled_time` is passed as a value in the argument array. This atom
+is treated specially by SchedEx, and is replaced by the scheduled invocation time for which the function is being
+called.
 
 # Installation
 
@@ -113,14 +168,10 @@ by adding `sched_ex` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:sched_ex, "~> 0.0"}
+    {:sched_ex, "~> 1.0"}
   ]
 end
 ```
-
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/sched_ex](https://hexdocs.pm/sched_ex).
 
 # LICENSE
 
