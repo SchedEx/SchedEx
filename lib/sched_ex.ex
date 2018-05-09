@@ -7,7 +7,7 @@ defmodule SchedEx do
   Runs the given module, function and argument at the given time
   """
   def run_at(m, f, a, %DateTime{} = time) when is_atom(m) and is_atom(f) and is_list(a) do
-    run_at(fn -> apply(m,f,a) end, time)
+    run_at(fn -> apply(m, f, a) end, time)
   end
 
   @doc """
@@ -89,6 +89,7 @@ defmodule SchedEx do
     case as_crontab(crontab) do
       {:ok, expression} ->
         SchedEx.Runner.run(func, expression, Keyword.put_new(opts, :repeat, true))
+
       {:error, _} = error ->
         error
     end
@@ -118,18 +119,21 @@ defmodule SchedEx do
   end
 
   defp mfa_to_fn(m, f, args) do
-    fn(time) ->
-      substituted_args = Enum.map(args, fn(arg) ->
-        case arg do
-          :sched_ex_scheduled_time -> time
-          _ -> arg
-        end
-      end)
-      apply(m,f,substituted_args)
+    fn time ->
+      substituted_args =
+        Enum.map(args, fn arg ->
+          case arg do
+            :sched_ex_scheduled_time -> time
+            _ -> arg
+          end
+        end)
+
+      apply(m, f, substituted_args)
     end
   end
 
   defp as_crontab(%Crontab.CronExpression{} = crontab), do: {:ok, crontab}
+
   defp as_crontab(crontab) do
     extended = length(String.split(crontab)) > 5
     Crontab.CronExpression.Parser.parse(crontab, extended)

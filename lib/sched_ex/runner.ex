@@ -40,10 +40,21 @@ defmodule SchedEx.Runner do
   def init({func, delay_definition, opts}) do
     Process.flag(:trap_exit, true)
     start_time = Keyword.get(opts, :start_time, DateTime.utc_now())
+
     case schedule_next(start_time, delay_definition, opts) do
       {%DateTime{} = next_time, quantized_next_time} ->
         stats = %SchedEx.Stats{}
-        {:ok, %{func: func, delay_definition: delay_definition, scheduled_at: next_time, quantized_scheduled_at: quantized_next_time, stats: stats, opts: opts}}
+
+        {:ok,
+         %{
+           func: func,
+           delay_definition: delay_definition,
+           scheduled_at: next_time,
+           quantized_scheduled_at: quantized_next_time,
+           stats: stats,
+           opts: opts
+         }}
+
       {:error, _} ->
         :ignore
     end
@@ -53,19 +64,39 @@ defmodule SchedEx.Runner do
     {:reply, stats, state}
   end
 
-  def handle_info(:run, %{func: func, delay_definition: delay_definition, scheduled_at: this_time, quantized_scheduled_at: quantized_this_time, stats: stats, opts: opts} = state) do
+  def handle_info(
+        :run,
+        %{
+          func: func,
+          delay_definition: delay_definition,
+          scheduled_at: this_time,
+          quantized_scheduled_at: quantized_this_time,
+          stats: stats,
+          opts: opts
+        } = state
+      ) do
     start_time = DateTime.utc_now()
+
     if is_function(func, 1) do
       func.(this_time)
     else
       func.()
     end
+
     end_time = DateTime.utc_now()
     stats = SchedEx.Stats.update(stats, this_time, quantized_this_time, start_time, end_time)
+
     if Keyword.get(opts, :repeat, false) do
       case schedule_next(this_time, delay_definition, opts) do
         {%DateTime{} = next_time, quantized_next_time} ->
-          {:noreply, %{state | scheduled_at: next_time, quantized_scheduled_at: quantized_next_time, stats: stats}}
+          {:noreply,
+           %{
+             state
+             | scheduled_at: next_time,
+               quantized_scheduled_at: quantized_next_time,
+               stats: stats
+           }}
+
         _ ->
           {:stop, :normal, %{state | stats: stats}}
       end
@@ -92,15 +123,19 @@ defmodule SchedEx.Runner do
     time_scale = Keyword.get(opts, :time_scale, SchedEx.IdentityTimeScale)
     timezone = Keyword.get(opts, :timezone, "UTC")
     now = time_scale.now(timezone)
+
     case Crontab.Scheduler.get_next_run_date(crontab, DateTime.to_naive(now)) do
       {:ok, naive_next} ->
-        next = case Timex.to_datetime(naive_next, timezone) do
-          %Timex.AmbiguousDateTime{after: later_time} -> later_time
-          time -> time
-        end
+        next =
+          case Timex.to_datetime(naive_next, timezone) do
+            %Timex.AmbiguousDateTime{after: later_time} -> later_time
+            time -> time
+          end
+
         delay = round(max(DateTime.diff(next, now, :millisecond) / time_scale.speedup(), 0))
         Process.send_after(self(), :run, delay)
         {next, Timex.shift(DateTime.utc_now(), milliseconds: delay)}
+
       {:error, _} = error ->
         error
     end
