@@ -2,6 +2,7 @@
 
 [![Build Status](https://travis-ci.org/SchedEx/SchedEx.svg?branch=master)](https://travis-ci.org/SchedEx/SchedEx)
 [![Inline docs](http://inch-ci.org/github/SchedEx/SchedEx.svg?branch=master&style=flat)](http://inch-ci.org/github/SchedEx/SchedEx)
+[![Hex.pm](https://img.shields.io/hexpm/v/sched_ex.svg?style=flat-square)](https://hex.pm/packages/sched_ex)
 
 SchedEx is a simple yet deceptively powerful scheduling library for Elixir. Though it is almost trivially simple by
 design, it enables a number of very powerful use cases to be accomplished with very little effort.
