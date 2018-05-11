@@ -32,7 +32,7 @@ defmodule SchedEx.Mixfile do
   end
 
   defp description() do
-    "SchedEx is a simple yet deceptively powerful scheduling library for Elixir. It is trivially simple by design, and is especially suited for use within an event sourced architecture."
+    "SchedEx is a simple yet deceptively powerful scheduling library for Elixir."
   end
 
   defp package() do
