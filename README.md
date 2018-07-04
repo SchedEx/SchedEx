@@ -93,7 +93,7 @@ error}` on error). The returned pid can be passed to `SchedEx.cancel` to cancel 
 SchedEx uses the [crontab](https://github.com/jshmrtn/crontab) library to parse crontab strings. If it is unable to
 parse the given crontab string, an error is returned from the `SchedEx.run_every` call and no jobs are scheduled.
 
-Buiding on the support provided by the crontab library, SchedEx supports *extended* crontabs. Such crontabs have
+Building on the support provided by the crontab library, SchedEx supports *extended* crontabs. Such crontabs have
 7 segments instead of the usual 5; one is added to the beginning of the crontab and expresses a seconds value, and one
 added to the end expresses a year value. As such, it's possible to specify a unique instant down to the second, for
 example:
