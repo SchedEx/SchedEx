@@ -9,7 +9,12 @@ defmodule SchedEx.Runner do
   unit as derived from a TimeScale, or a CronExpression)
   """
   def run(func, delay_definition, opts) when is_function(func) do
-    GenServer.start_link(__MODULE__, {func, delay_definition, opts})
+    name = Keyword.get(opts, :name)
+    if name do 
+      GenServer.start_link(__MODULE__, {func, delay_definition, opts}, name: name)
+    else
+      GenServer.start_link(__MODULE__, {func, delay_definition, opts})
+    end
   end
 
   @doc """
