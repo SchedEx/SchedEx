@@ -62,7 +62,7 @@ def start_scheduled_tasks(sup, scheduled_tasks) do
   |> Enum.map(&(DynamicSupervisor.start_child(sup, &1)))
 end
 
-defp child_spec_for_scheduled_task(%{ScheduledTask{id: id, crontab: crontab} = task) do
+defp child_spec_for_scheduled_task(%ScheduledTask{id: id, crontab: crontab} = task) do
   %{id: "scheduled-task-#{id}", start: {SchedEx, :run_every, mfa_for_task(task) ++ [crontab]}}
 end
 
