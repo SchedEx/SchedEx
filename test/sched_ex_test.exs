@@ -408,6 +408,22 @@ defmodule SchedExTest do
       {:error, error} = SchedEx.run_every(TestCallee, :append, [context.agent, 1], "O M G W T")
       assert error == "Can't parse O as interval minute."
     end
+
+    test "accepts a name option", context do
+      {:ok, _} = start_supervised({TestTimeScale, {Timex.now("UTC"), 60}}, restart: :temporary)
+
+      {:ok, pid} =
+        SchedEx.run_every(
+          fn -> TestCallee.append(context.agent, 1) end,
+          "* * * * *",
+          name: :name_test,
+          time_scale: TestTimeScale
+        )
+
+      Process.sleep(2000)
+      assert TestCallee.clear(context.agent) == [1, 1]
+      assert pid == Process.whereis(:name_test)
+    end
   end
 
   describe "timer process supervision" do

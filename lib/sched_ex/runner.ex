@@ -5,15 +5,15 @@ defmodule SchedEx.Runner do
 
   @doc """
   Main point of entry into this module. Starts and returns a process which will
-  run the given function per the specified delay definition (can be an integer 
+  run the given function per the specified delay definition (can be an integer
   unit as derived from a TimeScale, or a CronExpression)
   """
   def run(func, delay_definition, opts) when is_function(func) do
-    GenServer.start_link(__MODULE__, {func, delay_definition, opts})
+    GenServer.start_link(__MODULE__, {func, delay_definition, opts}, Keyword.take(opts, [:name]))
   end
 
   @doc """
-  Returns stats for the given process. 
+  Returns stats for the given process.
   """
   def stats(pid) when is_pid(pid) do
     GenServer.call(pid, :stats)
