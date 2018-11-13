@@ -43,16 +43,7 @@ defmodule SchedEx do
   unless a custom `time_scale` is specified). If func is of arity 1, the scheduled
   execution time will be passed for each invocation
 
-  Supports the following options:
-
-  * `repeat`: Whether or not this job should be recurring. Defaults to false
-  * `start_time`: A `DateTime` to use as the basis to offset from
-  * `time_scale`: A module implementing one method: `speedup/0`, which returns a
-  float factor to speed up delays by. Used mostly for speeding up test runs.
-  If not specified, defaults to an identity module which returns a value of 1,
-  such that this method runs the job in 'delay' ms
-  * `name`: To attach a name to the process. Useful for adding a name to Registry
-  to lookup later. ie. {:via, Registry, {YourRegistryName, "scheduled-task-1"}}
+  Takes the same options as `run_in/5`
   """
   def run_in(func, delay, opts \\ []) when is_function(func) and is_integer(delay) do
     SchedEx.Runner.run(func, delay, opts)
@@ -81,16 +72,7 @@ defmodule SchedEx do
   Runs the given function on every occurence of the given crontab. If func is of arity 1, the
   scheduled execution time will be passed for each invocation
 
-  Supports the following options:
-
-  * `timezone`: A string timezone identifier (`America/Chicago`) specifying the timezone within which
-  the crontab should be interpreted. If not specified, defaults to `UTC`
-  * `time_scale`: A module implementing two methods: `now/1`, which returns the current time in the specified timezone, and
-  `speedup/0`, which returns an integer factor to speed up delays by. Used mostly for speeding up test runs. If not specified, defaults to
-  an identity module which returns 'now', and a factor of 1
-  * `repeat`: Whether or not this job should be recurring. If false, only the next matching time of the crontab is executed. Defaults to true
-  * `name`: To attach a name to the process. Useful for adding a name to Registry
-  to lookup later. ie. {:via, Registry, {YourRegistryName, "scheduled-task-1"}}
+  Takes the same options as `run_every/5`
   """
   def run_every(func, crontab, opts \\ []) when is_function(func) do
     case as_crontab(crontab) do
