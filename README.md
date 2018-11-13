@@ -18,7 +18,7 @@ In most contexts `SchedEx.run_every` is the function most commonly used. There a
 
 ### Static Configuration
 
-This approach is useful when you want SchedEx to manage jobs whose configuration is static. At FunnelCloud, we use this 
+This approach is useful when you want SchedEx to manage jobs whose configuration is static. At FunnelCloud, we use this
 approach to run things like our hourly reports, cleanup tasks and such.  Typically, you will start jobs inside your
 `application.ex` file:
 
@@ -50,7 +50,7 @@ Supervisor will then restart the relevant SchedEx process, which will continue t
 
 ### Dynamically Scheduled Tasks
 
-SchedEx is especially suited to running tasks which run on a schedule and may be dynamically configured by the user. 
+SchedEx is especially suited to running tasks which run on a schedule and may be dynamically configured by the user.
 For example, at FunnelCloud we have a `ScheduledTask` Ecto schema with a string field called `crontab`. At startup our
 `scheduled_task` application reads entries from this table, determines the `module, function, argument` which
 should be invoked when the task comes due, and adds a SchedEx job to a supervisor:
@@ -62,7 +62,7 @@ def start_scheduled_tasks(sup, scheduled_tasks) do
   |> Enum.map(&(DynamicSupervisor.start_child(sup, &1)))
 end
 
-defp child_spec_for_scheduled_task(%{ScheduledTask{id: id, crontab: crontab} = task) do
+defp child_spec_for_scheduled_task(%ScheduledTask{id: id, crontab: crontab} = task) do
   %{id: "scheduled-task-#{id}", start: {SchedEx, :run_every, mfa_for_task(task) ++ [crontab]}}
 end
 
@@ -76,6 +76,42 @@ This will start one SchedEx process per `ScheduledTask`, all supervised within a
 the invoked function crashes `DynamicSupervisor` will restart it, making this approach robust to failures anywhere in the
 application. Note that the above is somewhat simplified - in production we have some additional logic to handle
 starting / stopping / reloading tasks on user change.
+
+You can optionally pass a name to the task that would allow you to lookup the task later with Registry or gproc and remove it like so:
+
+```elixir
+child_spec = %{
+  id: "scheduled-task-#{id}",
+  start:
+    {SchedEx, :run_every,
+     mfa_for_task(task) ++
+       [crontab, [name: {:via, Registry, {RegistryName, "scheduled-task-#{id}"}}]]}
+}
+
+def get_scheduled_item(id) do
+  #ie. "scheduled-task-1"
+  list = Registry.lookup(RegistryName, id)
+
+  if length(list) > 0 do
+    {pid, _} = hd(list)
+    {:ok, pid}
+  else
+    {:error, "does not exist"}
+  end
+end
+
+def cancel_scheduled_item(id) do
+  with {:ok, pid} <- get_scheduled_item(id) do
+    DynamicSupervisor.terminate_child(DSName, pid)
+  end
+end
+```
+
+Then in your children in application.ex
+```elixir
+{Registry, keys: :unique, name: RegistryName},
+{DynamicSupervisor, strategy: :one_for_one, name: DSName},
+```
 
 ## Other Functions
 
@@ -93,7 +129,7 @@ error}` on error). The returned pid can be passed to `SchedEx.cancel` to cancel 
 SchedEx uses the [crontab](https://github.com/jshmrtn/crontab) library to parse crontab strings. If it is unable to
 parse the given crontab string, an error is returned from the `SchedEx.run_every` call and no jobs are scheduled.
 
-Buiding on the support provided by the crontab library, SchedEx supports *extended* crontabs. Such crontabs have
+Building on the support provided by the crontab library, SchedEx supports *extended* crontabs. Such crontabs have
 7 segments instead of the usual 5; one is added to the beginning of the crontab and expresses a seconds value, and one
 added to the end expresses a year value. As such, it's possible to specify a unique instant down to the second, for
 example:
@@ -155,7 +191,7 @@ end
 
 will run through an entire day's worth of scheduling time in one second, and allows us to test against the expectations
 of the called function quickly, while maintaining near-perfect parity with development. The only thing that changes in
-the test environment is the passing of a `time_scale`; all other code is exactly as it is in production. 
+the test environment is the passing of a `time_scale`; all other code is exactly as it is in production.
 
 Note that in the above test, the atom `:sched_ex_scheduled_time` is passed as a value in the argument array. This atom
 is treated specially by SchedEx, and is replaced by the scheduled invocation time for which the function is being
