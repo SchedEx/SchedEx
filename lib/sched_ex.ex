@@ -28,10 +28,9 @@ defmodule SchedEx do
 
   * `repeat`: Whether or not this job should be recurring
   * `start_time`: A `DateTime` to use as the basis to offset from
-  * `time_scale`: A module implementing one method: `speedup/0`, which returns a
-  float factor to speed up delays by. Used mostly for speeding up test runs.
-  If not specified, defaults to an identity module which returns a value of 1,
-  such that this method runs the job in 'delay' ms
+  * `time_scale`: A module that implements the `SchedEx.TimeScale` behaviour, by
+  default is set to `SchedEx.IdentityTimeScale`. Can be used to speed up time
+  (often used for speeding up test runs)
   * `name`: To attach a name to the process. Useful for adding a name to Registry
   to lookup later. ie. {:via, Registry, {YourRegistryName, "scheduled-task-1"}}
   """
@@ -68,9 +67,9 @@ defmodule SchedEx do
 
   * `timezone`: A string timezone identifier (`America/Chicago`) specifying the timezone within which
   the crontab should be interpreted. If not specified, defaults to `UTC`
-  * `time_scale`: A module implementing two methods: `now/1`, which returns the current time in the specified timezone, and
-  `speedup/0`, which returns a float factor to speed up delays by. Used mostly for speeding up test runs. If not specified, defaults to
-  an identity module which returns 'now', and a factor of 1
+  * `time_scale`: A module that implements the `SchedEx.TimeScale` behaviour, by
+  default is set to `SchedEx.IdentityTimeScale`. Can be used to speed up time
+  (often used for speeding up test runs)
   * `name`: To attach a name to the process. Useful for adding a name to Registry
   to lookup later. ie. {:via, Registry, {YourRegistryName, "scheduled-task-1"}}
   """
