@@ -108,6 +108,10 @@ defmodule SchedEx.Runner do
   def handle_info(:shutdown, state) do
     {:stop, :normal, state}
   end
+  
+  def handle_info({:EXIT, _pid, :normal}, state) do
+    {:noreply, state}
+  end
 
   defp schedule_next(%DateTime{} = from, delay, opts) when is_integer(delay) do
     time_scale = Keyword.get(opts, :time_scale, SchedEx.IdentityTimeScale)
