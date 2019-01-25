@@ -438,6 +438,10 @@ defmodule SchedExTest do
         GenServer.call(pid, {:schedule_job, m, f, a, delay})
       end
 
+      def self_destruct(pid, delay) do
+        GenServer.call(pid, {:self_destruct, delay})
+      end
+
       def init(_) do
         {:ok, %{}}
       end
@@ -446,6 +450,13 @@ defmodule SchedExTest do
         {:ok, timer} = SchedEx.run_in(m, f, a, delay)
         {:reply, timer, state}
       end
+
+      def handle_call({:self_destruct, delay}, from, state) do
+        {:ok, timer} = SchedEx.run_in(fn ->  2 + 2 end, delay)
+        send(timer, {:EXIT, from, :normal})
+        {:reply, timer, state}
+      end
+
     end
 
     setup do
@@ -482,7 +493,6 @@ defmodule SchedExTest do
       end
 
       timer = TerminationHelper.schedule_job(context.helper, Quitter, :leave, [], @sleep_duration)
-
       Process.sleep(2 * @sleep_duration)
 
       assert Process.alive?(context.helper)
@@ -508,6 +518,13 @@ defmodule SchedExTest do
 
       refute Process.alive?(context.helper)
       refute Process.alive?(timer)
+    end
+
+    @tag exit: true
+    test "timers should ignore messages from processes that exit normally.", context do
+      timer = TerminationHelper.self_destruct(context.helper, @sleep_duration)
+      Process.sleep div(@sleep_duration, 2)
+      assert Process.alive?(timer)
     end
   end
 
