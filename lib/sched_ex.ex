@@ -63,6 +63,13 @@ defmodule SchedEx do
   (often used for speeding up test runs)
   * `name`: To attach a name to the process. Useful for adding a name to Registry
   to lookup later. ie. {:via, Registry, {YourRegistryName, "scheduled-task-1"}}
+  * `nonexistent_time_strategy`: How to handle scheduled runs within a DST forward boundary when evaluated within the
+  timezone specified by the `timezone` option. Valid values are `:skip` (the default) and `:adjust`. By way of example,
+  for a job which is scheduled to happen daily at 2:30am in the `America/Chicago` timezone, on days where a forward DST
+  transition happens (such as 10 March 2019) `:skip` will skip this invocation and next run the job at 2:30 CDT 11 March
+  2019, while `:adjust` will run the job the same amount of time into the day as it would normally run (2.5 hours after
+    midnight, which will be at 3:30 CDT 10 March 2019). 
+
   """
   def run_every(m, f, a, crontab, opts \\ []) when is_atom(m) and is_atom(f) and is_list(a) do
     run_every(mfa_to_fn(m, f, a), crontab, opts)
