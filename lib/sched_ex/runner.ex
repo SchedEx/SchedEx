@@ -108,7 +108,7 @@ defmodule SchedEx.Runner do
   def handle_info(:shutdown, state) do
     {:stop, :normal, state}
   end
-  
+
   def handle_info({:EXIT, _pid, :normal}, state) do
     {:noreply, state}
   end
@@ -123,19 +123,13 @@ defmodule SchedEx.Runner do
     {next, Timex.shift(now, milliseconds: delay)}
   end
 
-  defp schedule_next(_from, %Crontab.CronExpression{} = crontab, opts) do
+  defp schedule_next(_from, crontab, opts) do
     time_scale = Keyword.get(opts, :time_scale, SchedEx.IdentityTimeScale)
     timezone = Keyword.get(opts, :timezone, "UTC")
     now = time_scale.now(timezone)
 
-    case Crontab.Scheduler.get_next_run_date(crontab, DateTime.to_naive(now)) do
-      {:ok, naive_next} ->
-        next =
-          case Timex.to_datetime(naive_next, timezone) do
-            %Timex.AmbiguousDateTime{after: later_time} -> later_time
-            time -> time
-          end
-
+    case next_occurrence(now, crontab, timezone, opts) do
+      %DateTime{} = next ->
         delay = round(max(DateTime.diff(next, now, :millisecond) / time_scale.speedup(), 0))
         Process.send_after(self(), :run, delay)
         {next, Timex.shift(DateTime.utc_now(), milliseconds: delay)}
@@ -143,5 +137,70 @@ defmodule SchedEx.Runner do
       {:error, _} = error ->
         error
     end
+  end
+
+  defp next_occurrence(
+         %DateTime{} = from,
+         %Crontab.CronExpression{} = crontab,
+         timezone,
+         opts
+       ) do
+    naive_from = from |> DateTime.to_naive()
+
+    case Crontab.Scheduler.get_next_run_date(crontab, naive_from) do
+      {:ok, naive_next} ->
+        case Timex.to_datetime(naive_next, timezone) do
+          {:error, {:could_not_resolve_timezone, _, wall_offset, _}} ->
+            opts
+            |> Keyword.get(:nonexistent_time_strategy, :skip)
+            |> case do
+              :skip ->
+                skip_non_existent_time(naive_next, wall_offset, crontab, timezone, opts)
+
+              :adjust ->
+                adjust_non_existent_time(naive_next, timezone)
+            end
+
+          %Timex.AmbiguousDateTime{after: later_time} ->
+            later_time
+
+          time ->
+            time
+        end
+
+      {:error, _} = error ->
+        error
+    end
+  end
+
+  defp skip_non_existent_time(
+         %NaiveDateTime{} = naive_date,
+         wall_offset,
+         crontab,
+         timezone,
+         opts
+       ) do
+    # Assume that there will be a single valid period one hour past the non existent time
+    [%{from: %{wall: start_of_next_period}}] =
+      Tzdata.periods_for_time(timezone, wall_offset + 3600, :wall)
+
+    first_date_in_next_period =
+      naive_date
+      |> Timex.shift(seconds: start_of_next_period - wall_offset)
+      |> Timex.to_datetime(timezone)
+
+    next_occurrence(first_date_in_next_period, crontab, timezone, opts)
+  end
+
+  defp adjust_non_existent_time(
+         %NaiveDateTime{} = naive_date,
+         timezone
+       ) do
+    # Assume that midnight of the non-existent day is in a valid period
+    naive_start_of_day = Timex.beginning_of_day(naive_date)
+    difference_from_midnight = NaiveDateTime.diff(naive_date, naive_start_of_day)
+
+    start_of_day = naive_start_of_day |> Timex.to_datetime(timezone)
+    start_of_day |> Timex.shift(seconds: difference_from_midnight)
   end
 end

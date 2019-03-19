@@ -52,6 +52,13 @@ defmodule SchedExTest do
       now =
         base_time
         |> Timex.shift(milliseconds: diff)
+        |> case do
+          %Timex.AmbiguousDateTime{after: later_time} ->
+            later_time
+
+          time ->
+            time
+        end
         |> Timex.Timezone.convert(timezone)
 
       {:reply, now, state}
@@ -364,17 +371,57 @@ defmodule SchedExTest do
       assert TestCallee.clear(context.agent) == [expected_time]
     end
 
-    test "handles scheduling when crontab refers to an ambiguous time (for example on DST transition)",
+    test "skips non-existent times when configured to do so and crontab refers to a non-existent time",
+         context do
+      # Next time will resolve to 2:30 AM CDT, which doesn't exist
+      now = Timex.to_datetime({{2019, 3, 10}, {0, 30, 0}}, "America/Chicago")
+      {:ok, _} = start_supervised({TestTimeScale, {now, 86400}}, restart: :temporary)
+
+      # Skip invocations until the next valid one
+      expected_time_for_skip = Timex.to_datetime({{2019, 3, 11}, {2, 30, 0}}, "America/Chicago")
+
+      SchedEx.run_every(
+        fn time -> TestCallee.append(context.agent, time) end,
+        "30 2 * * *",
+        timezone: "America/Chicago",
+        nonexistent_time_strategy: :skip,
+        time_scale: TestTimeScale
+      )
+
+      # Needs an extra second to sleep since it's going a day forward
+      Process.sleep(2000)
+      assert TestCallee.clear(context.agent) == [expected_time_for_skip]
+    end
+
+    test "adjusts non-existent times when configured to do so and crontab refers to a non-existent time",
+         context do
+      # Next time will resolve to 2:30 AM CDT, which doesn't exist
+      now = Timex.to_datetime({{2019, 3, 10}, {0, 30, 0}}, "America/Chicago")
+      {:ok, _} = start_supervised({TestTimeScale, {now, 86400}}, restart: :temporary)
+
+      # Adjust the invocation forward so it's the same number of seconds from midnight
+      expected_time_for_adjust = Timex.to_datetime({{2019, 3, 10}, {3, 30, 0}}, "America/Chicago")
+
+      SchedEx.run_every(
+        fn time -> TestCallee.append(context.agent, time) end,
+        "30 2 * * *",
+        timezone: "America/Chicago",
+        nonexistent_time_strategy: :adjust,
+        time_scale: TestTimeScale
+      )
+
+      Process.sleep(1000)
+      assert TestCallee.clear(context.agent) == [expected_time_for_adjust]
+    end
+
+    test "takes the later time time when configured to do so and crontab refers to an ambiguous time",
          context do
       # Next time will resolve to 1:00 AM CST, which is ambiguous
       now = Timex.to_datetime({{2017, 11, 5}, {0, 30, 0}}, "America/Chicago")
       {:ok, _} = start_supervised({TestTimeScale, {now, 86400}}, restart: :temporary)
-      {:ok, crontab} = Crontab.CronExpression.Parser.parse("0 1 * * *")
 
-      {:ok, naive_expected_time} =
-        Crontab.Scheduler.get_next_run_date(crontab, DateTime.to_naive(now))
-
-      expected_time = Timex.to_datetime(naive_expected_time, "America/Chicago").after
+      # Pick the later of the two ambiguous times
+      expected_time = Timex.to_datetime({{2017, 11, 5}, {1, 0, 0}}, "America/Chicago").after
 
       SchedEx.run_every(
         fn time -> TestCallee.append(context.agent, time) end,
@@ -452,11 +499,10 @@ defmodule SchedExTest do
       end
 
       def handle_call({:self_destruct, delay}, from, state) do
-        {:ok, timer} = SchedEx.run_in(fn ->  2 + 2 end, delay)
+        {:ok, timer} = SchedEx.run_in(fn -> 2 + 2 end, delay)
         send(timer, {:EXIT, from, :normal})
         {:reply, timer, state}
       end
-
     end
 
     setup do
@@ -523,7 +569,7 @@ defmodule SchedExTest do
     @tag exit: true
     test "timers should ignore messages from processes that exit normally.", context do
       timer = TerminationHelper.self_destruct(context.helper, @sleep_duration)
-      Process.sleep div(@sleep_duration, 2)
+      Process.sleep(div(@sleep_duration, 2))
       assert Process.alive?(timer)
     end
   end
