@@ -4,7 +4,7 @@ defmodule SchedEx.Mixfile do
   def project do
     [
       app: :sched_ex,
-      version: "1.0.4",
+      version: "1.1.0",
       elixir: "~> 1.5",
       start_permanent: Mix.env() == :prod,
       description: description(),
