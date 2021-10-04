@@ -172,7 +172,9 @@ defmodule SchedExTest do
     test "can repeat", context do
       SchedEx.run_in(fn -> TestCallee.append(context.agent, 1) end, @sleep_duration, repeat: true)
       Process.sleep(round(2.5 * @sleep_duration))
-      assert TestCallee.clear(context.agent) |> length() > 1
+      calls = TestCallee.clear(context.agent)
+      assert length(calls) >= 2
+      assert length(calls) <= 4
     end
 
     test "respects timescale", context do
@@ -216,7 +218,9 @@ defmodule SchedExTest do
       )
 
       Process.sleep(2000)
-      assert TestCallee.clear(context.agent) == [1, 1]
+      calls = TestCallee.clear(context.agent)
+      assert length(calls) >= 2
+      assert length(calls) <= 4
     end
 
     test "runs the fn per the given crontab", context do
@@ -560,7 +564,7 @@ defmodule SchedExTest do
           timer =
             TerminationHelper.schedule_job(context.helper, Crasher, :boom, [], @sleep_duration)
 
-          Process.sleep(3 * @sleep_duration)
+          Process.sleep(5 * @sleep_duration)
 
           refute Process.alive?(context.helper)
           refute Process.alive?(timer)
