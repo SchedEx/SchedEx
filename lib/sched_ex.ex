@@ -3,6 +3,8 @@ defmodule SchedEx do
   SchedEx schedules jobs (either an m,f,a or a function) to run in the future. These jobs are run in isolated processes, and are unsurpervised.
   """
 
+  alias Crontab.CronExpression.Parser
+
   @doc """
   Runs the given module, function and argument at the given time
   """
@@ -115,11 +117,10 @@ defmodule SchedEx do
   defp mfa_to_fn(m, f, args) do
     fn time ->
       substituted_args =
-        Enum.map(args, fn arg ->
-          case arg do
-            :sched_ex_scheduled_time -> time
-            _ -> arg
-          end
+        args
+        |> Enum.map(fn
+          :sched_ex_scheduled_time -> time
+          arg -> arg
         end)
 
       apply(m, f, substituted_args)
@@ -130,6 +131,6 @@ defmodule SchedEx do
 
   defp as_crontab(crontab) do
     extended = length(String.split(crontab)) > 5
-    Crontab.CronExpression.Parser.parse(crontab, extended)
+    Parser.parse(crontab, extended)
   end
 end

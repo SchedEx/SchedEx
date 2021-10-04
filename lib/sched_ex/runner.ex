@@ -149,27 +149,31 @@ defmodule SchedEx.Runner do
 
     case Crontab.Scheduler.get_next_run_date(crontab, naive_from) do
       {:ok, naive_next} ->
-        case Timex.to_datetime(naive_next, timezone) do
-          {:error, {:could_not_resolve_timezone, _, wall_offset, _}} ->
-            opts
-            |> Keyword.get(:nonexistent_time_strategy, :skip)
-            |> case do
-              :skip ->
-                skip_non_existent_time(naive_next, wall_offset, crontab, timezone, opts)
-
-              :adjust ->
-                adjust_non_existent_time(naive_next, timezone)
-            end
-
-          %Timex.AmbiguousDateTime{after: later_time} ->
-            later_time
-
-          time ->
-            time
-        end
+        convert_naive_to_timezone(naive_next, crontab, timezone, opts)
 
       {:error, _} = error ->
         error
+    end
+  end
+
+  defp convert_naive_to_timezone(naive_next, crontab, timezone, opts) do
+    case Timex.to_datetime(naive_next, timezone) do
+      {:error, {:could_not_resolve_timezone, _, wall_offset, _}} ->
+        opts
+        |> Keyword.get(:nonexistent_time_strategy, :skip)
+        |> case do
+          :skip ->
+            skip_non_existent_time(naive_next, wall_offset, crontab, timezone, opts)
+
+          :adjust ->
+            adjust_non_existent_time(naive_next, timezone)
+        end
+
+      %Timex.AmbiguousDateTime{after: later_time} ->
+        later_time
+
+      time ->
+        time
     end
   end
 

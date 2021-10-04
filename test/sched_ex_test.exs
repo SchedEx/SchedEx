@@ -3,6 +3,8 @@ defmodule SchedExTest do
 
   import ExUnit.CaptureLog
 
+  alias Crontab.CronExpression.Parser
+
   doctest SchedEx
 
   @sleep_duration 20
@@ -251,7 +253,7 @@ defmodule SchedExTest do
       then = Timex.shift(now, seconds: 30)
 
       crontab =
-        Crontab.CronExpression.Parser.parse!(
+        Parser.parse!(
           "#{then.second} #{then.minute} #{then.hour} #{then.day} #{then.month} * #{then.year}",
           true
         )
@@ -275,7 +277,7 @@ defmodule SchedExTest do
       then = Timex.shift(now, seconds: -30)
 
       crontab =
-        Crontab.CronExpression.Parser.parse!(
+        Parser.parse!(
           "#{then.second} #{then.minute} #{then.hour} #{then.day} #{then.month} * #{then.year}",
           true
         )
@@ -298,7 +300,7 @@ defmodule SchedExTest do
 
     test "supports crontab expressions (and extended ones at that)", context do
       {:ok, _} = start_supervised({TestTimeScale, {Timex.now("UTC"), 1}}, restart: :temporary)
-      crontab = Crontab.CronExpression.Parser.parse!("* * * * * *", true)
+      crontab = Parser.parse!("* * * * * *", true)
 
       SchedEx.run_every(
         fn -> TestCallee.append(context.agent, 1) end,
@@ -312,7 +314,7 @@ defmodule SchedExTest do
 
     test "optionally passes the runtime into the m,f,a", context do
       {:ok, _} = start_supervised({TestTimeScale, {Timex.now("UTC"), 60}}, restart: :temporary)
-      {:ok, crontab} = Crontab.CronExpression.Parser.parse("* * * * *")
+      {:ok, crontab} = Parser.parse("* * * * *")
 
       {:ok, expected_naive_time} =
         Crontab.Scheduler.get_next_run_date(crontab, NaiveDateTime.utc_now())
@@ -333,7 +335,7 @@ defmodule SchedExTest do
 
     test "optionally passes the runtime into the fn", context do
       {:ok, _} = start_supervised({TestTimeScale, {Timex.now("UTC"), 60}}, restart: :temporary)
-      {:ok, crontab} = Crontab.CronExpression.Parser.parse("* * * * *")
+      {:ok, crontab} = Parser.parse("* * * * *")
 
       {:ok, expected_naive_time} =
         Crontab.Scheduler.get_next_run_date(crontab, NaiveDateTime.utc_now())
@@ -352,8 +354,8 @@ defmodule SchedExTest do
 
     test "supports interpreting crontab in a given timezone", context do
       now = Timex.now("America/Chicago")
-      {:ok, _} = start_supervised({TestTimeScale, {now, 86400}}, restart: :temporary)
-      {:ok, crontab} = Crontab.CronExpression.Parser.parse("0 1 * * *")
+      {:ok, _} = start_supervised({TestTimeScale, {now, 86_400}}, restart: :temporary)
+      {:ok, crontab} = Parser.parse("0 1 * * *")
 
       {:ok, naive_expected_time} =
         Crontab.Scheduler.get_next_run_date(crontab, DateTime.to_naive(now))
@@ -375,7 +377,7 @@ defmodule SchedExTest do
          context do
       # Next time will resolve to 2:30 AM CDT, which doesn't exist
       now = Timex.to_datetime({{2019, 3, 10}, {0, 30, 0}}, "America/Chicago")
-      {:ok, _} = start_supervised({TestTimeScale, {now, 86400}}, restart: :temporary)
+      {:ok, _} = start_supervised({TestTimeScale, {now, 86_400}}, restart: :temporary)
 
       # Skip invocations until the next valid one
       expected_time_for_skip = Timex.to_datetime({{2019, 3, 11}, {2, 30, 0}}, "America/Chicago")
@@ -397,7 +399,7 @@ defmodule SchedExTest do
          context do
       # Next time will resolve to 2:30 AM CDT, which doesn't exist
       now = Timex.to_datetime({{2019, 3, 10}, {0, 30, 0}}, "America/Chicago")
-      {:ok, _} = start_supervised({TestTimeScale, {now, 86400}}, restart: :temporary)
+      {:ok, _} = start_supervised({TestTimeScale, {now, 86_400}}, restart: :temporary)
 
       # Adjust the invocation forward so it's the same number of seconds from midnight
       expected_time_for_adjust = Timex.to_datetime({{2019, 3, 10}, {3, 30, 0}}, "America/Chicago")
@@ -418,7 +420,7 @@ defmodule SchedExTest do
          context do
       # Next time will resolve to 1:00 AM CST, which is ambiguous
       now = Timex.to_datetime({{2017, 11, 5}, {0, 30, 0}}, "America/Chicago")
-      {:ok, _} = start_supervised({TestTimeScale, {now, 86400}}, restart: :temporary)
+      {:ok, _} = start_supervised({TestTimeScale, {now, 86_400}}, restart: :temporary)
 
       # Pick the later of the two ambiguous times
       expected_time = Timex.to_datetime({{2017, 11, 5}, {1, 0, 0}}, "America/Chicago").after

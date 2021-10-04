@@ -22,9 +22,11 @@ defmodule SchedEx.Stats do
         |> Value.update(DateTime.diff(actual_start, quantized_scheduled_start, :microsecond)),
       quantization_error:
         quantization_error
-        |> Value.update(abs(DateTime.diff(quantized_scheduled_start, scheduled_start, :microsecond))),
+        |> Value.update(
+          abs(DateTime.diff(quantized_scheduled_start, scheduled_start, :microsecond))
+        ),
       execution_time:
-        execution_time 
+        execution_time
         |> Value.update(DateTime.diff(actual_end, actual_start, :microsecond))
     }
   end
