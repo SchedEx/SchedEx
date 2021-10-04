@@ -1,7 +1,7 @@
 <img src="https://user-images.githubusercontent.com/79646/36270991-42e8d440-124b-11e8-9bd6-17cfc02b77fa.png" alt="SchedEx" width="300"/>
 
-[![Build Status](https://travis-ci.org/SchedEx/SchedEx.svg?branch=master)](https://travis-ci.org/SchedEx/SchedEx)
-[![Inline docs](http://inch-ci.org/github/SchedEx/SchedEx.svg?branch=master&style=flat)](http://inch-ci.org/github/SchedEx/SchedEx)
+[![Build Status](https://github.com/SchedEx/SchedEx/workflows/Elixir%20CI/badge.svg)](https://github.com/SchedEx/SchedEx/actions)
+[![Docs](https://img.shields.io/badge/api-docs-green.svg?style=flat)](https://hexdocs.pm/sched_ex)
 [![Hex.pm](https://img.shields.io/hexpm/v/sched_ex.svg?style=flat-square)](https://hex.pm/packages/sched_ex)
 
 SchedEx is a simple yet deceptively powerful scheduling library for Elixir. Though it is almost trivially simple by
