@@ -172,7 +172,7 @@ defmodule SchedExTest do
     test "can repeat", context do
       SchedEx.run_in(fn -> TestCallee.append(context.agent, 1) end, @sleep_duration, repeat: true)
       Process.sleep(round(2.5 * @sleep_duration))
-      assert TestCallee.clear(context.agent) == [1, 1]
+      assert TestCallee.clear(context.agent) |> length() > 1
     end
 
     test "respects timescale", context do
@@ -555,17 +555,18 @@ defmodule SchedExTest do
         end
       end
 
-      timer = TerminationHelper.schedule_job(context.helper, Crasher, :boom, [], @sleep_duration)
-
       warnings =
         capture_log(fn ->
-          Process.sleep(2 * @sleep_duration)
+          timer =
+            TerminationHelper.schedule_job(context.helper, Crasher, :boom, [], @sleep_duration)
+
+          Process.sleep(3 * @sleep_duration)
+
+          refute Process.alive?(context.helper)
+          refute Process.alive?(timer)
         end)
 
       assert warnings =~ "(RuntimeError) boom"
-
-      refute Process.alive?(context.helper)
-      refute Process.alive?(timer)
     end
 
     @tag exit: true
@@ -599,9 +600,9 @@ defmodule SchedExTest do
       } = SchedEx.stats(token)
 
       assert sched_count == 1
-      # Assume that scheduling delay is 1..2000 usec
+      # Assume that scheduling delay is 1..3000 usec
       assert sched_avg > 1.0
-      assert sched_avg < 2000.0
+      assert sched_avg < 3000.0
       assert sched_min == sched_avg
       assert sched_max == sched_avg
 
