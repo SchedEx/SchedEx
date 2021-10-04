@@ -5,11 +5,12 @@ defmodule SchedEx.Mixfile do
     [
       app: :sched_ex,
       version: "1.1.1",
-      elixir: "~> 1.5",
+      elixir: "~> 1.9",
       start_permanent: Mix.env() == :prod,
       description: description(),
       package: package(),
       deps: deps(),
+      dialyzer: dialyzer(),
       name: "SchedEx",
       source_url: "https://github.com/SchedEx/SchedEx"
     ]
@@ -25,9 +26,10 @@ defmodule SchedEx.Mixfile do
     [
       {:crontab, "~> 1.1.2"},
       {:timex, "~> 3.1"},
-      {:ex_doc, ">= 0.0.0", only: :dev},
-      {:mix_test_watch, "~> 0.0", only: :dev, runtime: false},
-      {:inch_ex, only: :docs}
+      {:ex_doc, "~> 0.24", only: [:dev, :test], runtime: false},
+      {:dialyxir, "~> 1.0", only: [:dev, :test], runtime: false},
+      {:credo, "~> 1.0", only: [:dev, :test], runtime: false},
+      {:mix_test_watch, "~> 1.0", only: :dev, runtime: false}
     ]
   end
 
@@ -42,5 +44,9 @@ defmodule SchedEx.Mixfile do
       licenses: ["MIT"],
       links: %{"GitHub" => "https://github.com/SchedEx/SchedEx"}
     ]
+  end
+
+  defp dialyzer do
+    [plt_core_path: "priv/plts", plt_file: {:no_warn, "priv/plts/dialyzer.plt"}]
   end
 end
