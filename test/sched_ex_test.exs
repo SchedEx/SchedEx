@@ -455,7 +455,7 @@ defmodule SchedExTest do
 
     test "handles invalid crontabs", context do
       {:error, error} = SchedEx.run_every(TestCallee, :append, [context.agent, 1], "O M G W T")
-      assert error == "Can't parse O as interval minute."
+      assert error == "Can't parse O as minute."
     end
 
     test "accepts a name option", context do
