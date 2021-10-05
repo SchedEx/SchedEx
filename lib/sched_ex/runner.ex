@@ -42,7 +42,7 @@ defmodule SchedEx.Runner do
     start_time = Keyword.get(opts, :start_time, DateTime.utc_now())
 
     case schedule_next(start_time, delay_definition, opts) do
-      {%DateTime{} = next_time, quantized_next_time} ->
+      {%DateTime{} = next_time, quantized_next_time, timer_ref} ->
         stats = %SchedEx.Stats{}
 
         {:ok,
@@ -51,6 +51,7 @@ defmodule SchedEx.Runner do
            delay_definition: delay_definition,
            scheduled_at: next_time,
            quantized_scheduled_at: quantized_next_time,
+           timer_ref: timer_ref,
            stats: stats,
            opts: opts
          }}
@@ -88,12 +89,13 @@ defmodule SchedEx.Runner do
 
     if Keyword.get(opts, :repeat, false) do
       case schedule_next(this_time, delay_definition, opts) do
-        {%DateTime{} = next_time, quantized_next_time} ->
+        {%DateTime{} = next_time, quantized_next_time, timer_ref} ->
           {:noreply,
            %{
              state
              | scheduled_at: next_time,
                quantized_scheduled_at: quantized_next_time,
+               timer_ref: timer_ref,
                stats: stats
            }}
 
@@ -119,8 +121,8 @@ defmodule SchedEx.Runner do
     next = Timex.shift(from, milliseconds: delay)
     now = DateTime.utc_now()
     delay = max(DateTime.diff(next, now, :millisecond), 0)
-    Process.send_after(self(), :run, delay)
-    {next, Timex.shift(now, milliseconds: delay)}
+    timer_ref = Process.send_after(self(), :run, delay)
+    {next, Timex.shift(now, milliseconds: delay), timer_ref}
   end
 
   defp schedule_next(_from, %Crontab.CronExpression{} = crontab, opts) do
@@ -137,8 +139,8 @@ defmodule SchedEx.Runner do
           end
 
         delay = round(max(DateTime.diff(next, now, :millisecond) / time_scale.speedup(), 0))
-        Process.send_after(self(), :run, delay)
-        {next, Timex.shift(DateTime.utc_now(), milliseconds: delay)}
+        timer_ref = Process.send_after(self(), :run, delay)
+        {next, Timex.shift(DateTime.utc_now(), milliseconds: delay), timer_ref}
 
       {:error, _} = error ->
         error
