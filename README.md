@@ -1,8 +1,12 @@
 <img src="https://user-images.githubusercontent.com/79646/36270991-42e8d440-124b-11e8-9bd6-17cfc02b77fa.png" alt="SchedEx" width="300"/>
 
 [![Build Status](https://github.com/SchedEx/SchedEx/workflows/Elixir%20CI/badge.svg)](https://github.com/SchedEx/SchedEx/actions)
-[![Docs](https://img.shields.io/badge/api-docs-green.svg?style=flat)](https://hexdocs.pm/sched_ex)
-[![Hex.pm](https://img.shields.io/hexpm/v/sched_ex.svg?style=flat-square)](https://hex.pm/packages/sched_ex)
+[![Module Version](https://img.shields.io/hexpm/v/sched_ex.svg)](https://hex.pm/packages/sched_ex)
+[![Hex Docs](https://img.shields.io/badge/hex-docs-lightgreen.svg)](https://hexdocs.pm/sched_ex/)
+[![Total Download](https://img.shields.io/hexpm/dt/sched_ex.svg)](https://hex.pm/packages/sched_ex)
+[![License](https://img.shields.io/hexpm/l/sched_ex.svg)](https://github.com/SchedEx/SchedEx/blob/master/LICENSE.md)
+[![Last Updated](https://img.shields.io/github/last-commit/SchedEx/SchedEx.svg)](https://github.com/SchedEx/SchedEx/commits/master)
+
 
 SchedEx is a simple yet deceptively powerful scheduling library for Elixir. Though it is almost trivially simple by
 design, it enables a number of very powerful use cases to be accomplished with very little effort.
@@ -12,7 +16,7 @@ at [FunnelCloud](http://funnelcloud.io).
 
 For usage details, please refer to the [documentation](https://hexdocs.pm/sched_ex).
 
-# Basic Usage
+## Basic Usage
 
 In most contexts `SchedEx.run_every` is the function most commonly used. There are two typical use cases:
 
@@ -134,7 +138,7 @@ Building on the support provided by the crontab library, SchedEx supports *exten
 added to the end expresses a year value. As such, it's possible to specify a unique instant down to the second, for
 example:
 
-```
+```elixir
 50 59 23 31 12 * 1999     # You'd better be getting ready to party
 ```
 
@@ -197,9 +201,9 @@ Note that in the above test, the atom `:sched_ex_scheduled_time` is passed as a 
 is treated specially by SchedEx, and is replaced by the scheduled invocation time for which the function is being
 called.
 
-# Installation
+## Installation
 
-SchedEx can be installed by adding `sched_ex` to your list of dependencies in `mix.exs`:
+SchedEx can be installed by adding `:sched_ex` to your list of dependencies in `mix.exs`:
 
 ```elixir
 def deps do
@@ -209,6 +213,9 @@ def deps do
 end
 ```
 
-# LICENSE
+## Copyright and License
 
-MIT
+Copyright (c) 2018 Mat Trudel on behalf of FunnelCloud Inc.
+
+This work is free. You can redistribute it and/or modify it under the
+terms of the MIT License. See the [LICENSE.md](./LICENSE.md) file for more details.
