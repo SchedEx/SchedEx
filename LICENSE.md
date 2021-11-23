@@ -1,4 +1,4 @@
-MIT License
+# The MIT License
 
 Copyright (c) 2018 Mat Trudel on behalf of FunnelCloud Inc.
 

@@ -52,7 +52,7 @@ defmodule SchedEx do
   end
 
   @doc """
-  Runs the given module, function and argument on every occurence of the given crontab. Any
+  Runs the given module, function and argument on every occurrence of the given crontab. Any
   values in the arguments array which are equal to the magic symbol `:sched_ex_scheduled_time`
   are replaced with the scheduled execution time for each invocation
 
@@ -78,7 +78,7 @@ defmodule SchedEx do
   end
 
   @doc """
-  Runs the given function on every occurence of the given crontab. If func is of arity 1, the
+  Runs the given function on every occurrence of the given crontab. If func is of arity 1, the
   scheduled execution time will be passed for each invocation
 
   Takes the same options as `run_every/5`
