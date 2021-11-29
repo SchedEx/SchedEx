@@ -8,16 +8,16 @@ defmodule SchedEx do
   @doc """
   Runs the given module, function and argument at the given time
   """
-  def run_at(m, f, a, %DateTime{} = time) when is_atom(m) and is_atom(f) and is_list(a) do
-    run_at(fn -> apply(m, f, a) end, time)
+  def run_at(m, f, a, %DateTime{} = time, opts \\ []) when is_atom(m) and is_atom(f) and is_list(a) do
+    run_at(fn -> apply(m, f, a) end, time, opts)
   end
 
   @doc """
   Runs the given function at the given time
   """
-  def run_at(func, %DateTime{} = time) when is_function(func) do
+  def run_at(func, %DateTime{} = time, opts \\ []) when is_function(func) do
     delay = DateTime.diff(time, DateTime.utc_now(), :millisecond)
-    run_in(func, delay)
+    run_in(func, delay, opts)
   end
 
   @doc """
@@ -70,7 +70,7 @@ defmodule SchedEx do
   for a job which is scheduled to happen daily at 2:30am in the `America/Chicago` timezone, on days where a forward DST
   transition happens (such as 10 March 2019) `:skip` will skip this invocation and next run the job at 2:30 CDT 11 March
   2019, while `:adjust` will run the job the same amount of time into the day as it would normally run (2.5 hours after
-    midnight, which will be at 3:30 CDT 10 March 2019). 
+    midnight, which will be at 3:30 CDT 10 March 2019).
 
   """
   def run_every(m, f, a, crontab, opts \\ []) when is_atom(m) and is_atom(f) and is_list(a) do
