@@ -8,7 +8,8 @@ defmodule SchedEx do
   @doc """
   Runs the given module, function and argument at the given time
   """
-  def run_at(m, f, a, %DateTime{} = time, opts \\ []) when is_atom(m) and is_atom(f) and is_list(a) do
+  def run_at(m, f, a, %DateTime{} = time, opts \\ [])
+      when is_atom(m) and is_atom(f) and is_list(a) do
     run_at(fn -> apply(m, f, a) end, time, opts)
   end
 
