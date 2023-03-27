@@ -7,7 +7,7 @@ defmodule SchedExTest do
 
   doctest SchedEx
 
-  @sleep_duration 20
+  @sleep_duration 200
 
   defmodule TestCallee do
     use Agent
