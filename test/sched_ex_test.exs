@@ -417,7 +417,13 @@ defmodule SchedExTest do
       )
 
       Process.sleep(1000)
-      assert TestCallee.clear(context.agent) == [expected_time_for_adjust]
+      [adjusted_time] = TestCallee.clear(context.agent)
+
+      # Elixir 1.14.2 changes the behaviour here wrt microsecond adjustment, so just compare to
+      # the nearest second so that this test works everywhere
+      adjusted_time = DateTime.truncate(adjusted_time, :second)
+
+      assert adjusted_time == expected_time_for_adjust
     end
 
     test "takes the later time time when configured to do so and crontab refers to an ambiguous time",
