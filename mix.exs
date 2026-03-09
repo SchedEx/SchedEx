@@ -51,7 +51,7 @@ defmodule SchedEx.Mixfile do
   defp package do
     [
       description: "SchedEx is a simple yet deceptively powerful scheduling library for Elixir.",
-      files: ["lib", "test", "config", "mix.exs", "README*", "LICENSE*"],
+      files: ["lib", "test", "mix.exs", "README*", "LICENSE*"],
       maintainers: ["Mat Trudel"],
       licenses: ["MIT"],
       links: %{"GitHub" => @source_url}
