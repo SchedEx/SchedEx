@@ -26,7 +26,7 @@ defmodule SchedEx.Mixfile do
 
   defp deps do
     [
-      {:crontab, "~> 1.1.2"},
+      {:crontab, "~> 1.1"},
       {:timex, "~> 3.1"},
       {:ex_doc, ">= 0.0.0", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.0", only: [:dev, :test], runtime: false},
