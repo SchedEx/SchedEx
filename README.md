@@ -2,7 +2,7 @@
 
 [![Build Status](https://github.com/SchedEx/SchedEx/workflows/Elixir%20CI/badge.svg)](https://github.com/SchedEx/SchedEx/actions)
 [![Module Version](https://img.shields.io/hexpm/v/sched_ex.svg)](https://hex.pm/packages/sched_ex)
-[![Hex Docs](https://img.shields.io/badge/hex-docs-lightgreen.svg)](https://hexdocs.pm/sched_ex/)
+[![Hex Docs](https://img.shields.io/badge/hex-docs-lightgreen.svg)](https://sched-ex.hexdocs.pm/
 [![Total Download](https://img.shields.io/hexpm/dt/sched_ex.svg)](https://hex.pm/packages/sched_ex)
 [![License](https://img.shields.io/hexpm/l/sched_ex.svg)](https://github.com/SchedEx/SchedEx/blob/master/LICENSE.md)
 [![Last Updated](https://img.shields.io/github/last-commit/SchedEx/SchedEx.svg)](https://github.com/SchedEx/SchedEx/commits/master)
@@ -14,7 +14,7 @@ design, it enables a number of very powerful use cases to be accomplished with v
 SchedEx is written by [Mat Trudel](http://github.com/mtrudel), and development is generously supported by the fine folks
 at [FunnelCloud](http://funnelcloud.io).
 
-For usage details, please refer to the [documentation](https://hexdocs.pm/sched_ex).
+For usage details, please refer to the [documentation](https://sched-ex.hexdocs.pm).
 
 ## Basic Usage
 
