@@ -187,7 +187,7 @@ defmodule ExampleTest do
     # Let SchedEx run through a day's worth of scheduling time
     Process.sleep(1000)
 
-    expected_time = Timex.now() |> Timex.beginning_of_day() |> Timex.shift(hours: 34)
+    expected_time = DateTime.utc_now() |> DateTime.to_date() |> DateTime.new!(~T[00:00:00]) |> DateTime.add(34, :hour)
     assert DateTime.diff(AgentHelper.get(agent), expected_time) == 0
   end
 end
@@ -211,6 +211,21 @@ def deps do
     {:sched_ex, "~> 1.0"}
   ]
 end
+```
+
+## Time Zone Database
+
+If you use non-UTC timezones (e.g. the `timezone` option in `SchedEx.run_every`), you need a time zone database
+configured in your application. Elixir ships with only UTC support by default. Add one of the following libraries
+to your dependencies:
+
+- [`tz`](https://hex.pm/packages/tz) — compiled time zone data, no ETS tables
+- [`tzdata`](https://hex.pm/packages/tzdata) — ETS-based time zone data
+
+Then configure it in your `config.exs`:
+
+```elixir
+config :elixir, :time_zone_database, Tz.TimeZoneDatabase   # or Tzdata.TimeZoneDatabase
 ```
 
 ## Copyright and License

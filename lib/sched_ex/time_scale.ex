@@ -9,7 +9,7 @@ defmodule SchedEx.TimeScale do
   @doc """
   Must return the current time in the specified timezone.
   """
-  @callback now(Timex.Types.valid_timezone()) :: DateTime.t()
+  @callback now(Calendar.time_zone()) :: DateTime.t()
 
   @doc """
   Must returns a float factor to speed up delays by.
