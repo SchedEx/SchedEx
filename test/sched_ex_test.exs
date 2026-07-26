@@ -419,6 +419,32 @@ defmodule SchedExTest do
       assert adjusted_time == expected_time_for_adjust
     end
 
+    test "adjusts non-existent times when midnight itself is in the DST gap",
+         context do
+      # In America/Santiago, 2026-09-06 00:00:00 is a gap (clocks spring forward at midnight)
+      # A crontab targeting 00:30 will hit a non-existent time, and :adjust needs to
+      # compute from midnight — which is itself in the gap
+      now = DateTime.from_naive!(~N[2026-09-05 23:00:00], "America/Santiago")
+      {:ok, _} = start_supervised({TestTimeScale, {now, 86_400}}, restart: :temporary)
+
+      # 00:30 is 30 minutes from midnight; adjusted forward it lands at 01:30
+      expected_time_for_adjust = DateTime.from_naive!(~N[2026-09-06 01:30:00], "America/Santiago")
+
+      SchedEx.run_every(
+        fn time -> TestCallee.append(context.agent, time) end,
+        "30 0 * * *",
+        timezone: "America/Santiago",
+        nonexistent_time_strategy: :adjust,
+        time_scale: TestTimeScale
+      )
+
+      Process.sleep(1000)
+      [adjusted_time] = TestCallee.clear(context.agent)
+      adjusted_time = DateTime.truncate(adjusted_time, :second)
+
+      assert adjusted_time == expected_time_for_adjust
+    end
+
     test "takes the later time time when configured to do so and crontab refers to an ambiguous time",
          context do
       # Next time will resolve to 1:00 AM CST, which is ambiguous

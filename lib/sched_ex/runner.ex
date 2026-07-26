@@ -186,7 +186,12 @@ defmodule SchedEx.Runner do
     naive_start_of_day = NaiveDateTime.new!(NaiveDateTime.to_date(naive_date), ~T[00:00:00])
     difference_from_midnight = NaiveDateTime.diff(naive_date, naive_start_of_day)
 
-    {:ok, start_of_day} = DateTime.from_naive(naive_start_of_day, timezone)
+    start_of_day =
+      case DateTime.from_naive(naive_start_of_day, timezone) do
+        {:ok, dt} -> dt
+        {:gap, _before, just_after} -> just_after
+        {:ambiguous, _first, second} -> second
+      end
     DateTime.add(start_of_day, difference_from_midnight, :second)
   end
 end
