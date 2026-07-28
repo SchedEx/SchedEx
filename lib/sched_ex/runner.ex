@@ -192,6 +192,7 @@ defmodule SchedEx.Runner do
         {:gap, _before, just_after} -> just_after
         {:ambiguous, _first, second} -> second
       end
+
     DateTime.add(start_of_day, difference_from_midnight, :second)
   end
 end

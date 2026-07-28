@@ -171,7 +171,8 @@ defmodule SchedExTest do
     end
 
     test "respects timescale", context do
-      {:ok, _} = start_supervised({TestTimeScale, {DateTime.utc_now(), 1000}}, restart: :temporary)
+      {:ok, _} =
+        start_supervised({TestTimeScale, {DateTime.utc_now(), 1000}}, restart: :temporary)
 
       SchedEx.run_in(
         fn -> TestCallee.append(context.agent, 1) end,
@@ -452,7 +453,8 @@ defmodule SchedExTest do
       {:ok, _} = start_supervised({TestTimeScale, {now, 86_400}}, restart: :temporary)
 
       # Pick the later of the two ambiguous times
-      {:ambiguous, _, expected_time} = DateTime.from_naive(~N[2017-11-05 01:00:00], "America/Chicago")
+      {:ambiguous, _, expected_time} =
+        DateTime.from_naive(~N[2017-11-05 01:00:00], "America/Chicago")
 
       SchedEx.run_every(
         fn time -> TestCallee.append(context.agent, time) end,
