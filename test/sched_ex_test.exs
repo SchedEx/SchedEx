@@ -41,7 +41,7 @@ defmodule SchedExTest do
     end
 
     def init({base_time, speedup}) do
-      {:ok, %{base_time: base_time, time_0: Timex.now(), speedup: speedup}}
+      {:ok, %{base_time: base_time, time_0: DateTime.utc_now(), speedup: speedup}}
     end
 
     def handle_call(
@@ -49,19 +49,12 @@ defmodule SchedExTest do
           _from,
           %{base_time: base_time, time_0: time_0, speedup: speedup} = state
         ) do
-      diff = DateTime.diff(Timex.now(), time_0, :millisecond) * speedup
+      diff = round(DateTime.diff(DateTime.utc_now(), time_0, :millisecond) * speedup)
 
       now =
         base_time
-        |> Timex.shift(milliseconds: diff)
-        |> case do
-          %Timex.AmbiguousDateTime{after: later_time} ->
-            later_time
-
-          time ->
-            time
-        end
-        |> Timex.Timezone.convert(timezone)
+        |> DateTime.add(diff, :millisecond)
+        |> DateTime.shift_zone!(timezone)
 
       {:reply, now, state}
     end
@@ -82,7 +75,7 @@ defmodule SchedExTest do
         TestCallee,
         :append,
         [context.agent, 1],
-        Timex.shift(DateTime.utc_now(), milliseconds: @sleep_duration)
+        DateTime.add(DateTime.utc_now(), @sleep_duration, :millisecond)
       )
 
       Process.sleep(2 * @sleep_duration)
@@ -92,7 +85,7 @@ defmodule SchedExTest do
     test "runs the fn at the expected time", context do
       SchedEx.run_at(
         fn -> TestCallee.append(context.agent, 1) end,
-        Timex.shift(DateTime.utc_now(), milliseconds: @sleep_duration)
+        DateTime.add(DateTime.utc_now(), @sleep_duration, :millisecond)
       )
 
       Process.sleep(2 * @sleep_duration)
@@ -104,7 +97,7 @@ defmodule SchedExTest do
         TestCallee,
         :append,
         [context.agent, 1],
-        Timex.shift(DateTime.utc_now(), hours: -100)
+        DateTime.add(DateTime.utc_now(), -100 * 3600, :second)
       )
 
       Process.sleep(@sleep_duration)
@@ -117,7 +110,7 @@ defmodule SchedExTest do
           TestCallee,
           :append,
           [context.agent, 1],
-          Timex.shift(DateTime.utc_now(), milliseconds: @sleep_duration)
+          DateTime.add(DateTime.utc_now(), @sleep_duration, :millisecond)
         )
 
       :ok = SchedEx.cancel(token)
@@ -141,7 +134,7 @@ defmodule SchedExTest do
 
     test "optionally passes the runtime into the m,f,a", context do
       now = DateTime.utc_now()
-      expected_time = Timex.shift(now, milliseconds: @sleep_duration)
+      expected_time = DateTime.add(now, @sleep_duration, :millisecond)
 
       SchedEx.run_in(
         TestCallee,
@@ -157,7 +150,7 @@ defmodule SchedExTest do
 
     test "optionally passes the runtime into the fn", context do
       now = DateTime.utc_now()
-      expected_time = Timex.shift(now, milliseconds: @sleep_duration)
+      expected_time = DateTime.add(now, @sleep_duration, :millisecond)
 
       SchedEx.run_in(
         fn time -> TestCallee.append(context.agent, time) end,
@@ -178,7 +171,8 @@ defmodule SchedExTest do
     end
 
     test "respects timescale", context do
-      {:ok, _} = start_supervised({TestTimeScale, {Timex.now("UTC"), 1000}}, restart: :temporary)
+      {:ok, _} =
+        start_supervised({TestTimeScale, {DateTime.utc_now(), 1000}}, restart: :temporary)
 
       SchedEx.run_in(
         fn -> TestCallee.append(context.agent, 1) end,
@@ -207,7 +201,7 @@ defmodule SchedExTest do
 
   describe "run_every" do
     test "runs the m,f,a per the given crontab", context do
-      {:ok, _} = start_supervised({TestTimeScale, {Timex.now("UTC"), 60}}, restart: :temporary)
+      {:ok, _} = start_supervised({TestTimeScale, {DateTime.utc_now(), 60}}, restart: :temporary)
 
       SchedEx.run_every(
         TestCallee,
@@ -224,7 +218,7 @@ defmodule SchedExTest do
     end
 
     test "runs the fn per the given crontab", context do
-      {:ok, _} = start_supervised({TestTimeScale, {Timex.now("UTC"), 60}}, restart: :temporary)
+      {:ok, _} = start_supervised({TestTimeScale, {DateTime.utc_now(), 60}}, restart: :temporary)
 
       SchedEx.run_every(
         fn -> TestCallee.append(context.agent, 1) end,
@@ -237,7 +231,7 @@ defmodule SchedExTest do
     end
 
     test "respects the repeat flag", context do
-      {:ok, _} = start_supervised({TestTimeScale, {Timex.now("UTC"), 60}}, restart: :temporary)
+      {:ok, _} = start_supervised({TestTimeScale, {DateTime.utc_now(), 60}}, restart: :temporary)
 
       {:ok, pid} =
         SchedEx.run_every(
@@ -253,8 +247,8 @@ defmodule SchedExTest do
     end
 
     test "terminates after running if the crontab never fires again", context do
-      now = Timex.now("UTC")
-      then = Timex.shift(now, seconds: 30)
+      now = DateTime.utc_now()
+      then = DateTime.add(now, 30)
 
       crontab =
         Parser.parse!(
@@ -277,8 +271,8 @@ defmodule SchedExTest do
     end
 
     test "doesn't start up if the crontab never fires in the future" do
-      now = Timex.now("UTC")
-      then = Timex.shift(now, seconds: -30)
+      now = DateTime.utc_now()
+      then = DateTime.add(now, -30)
 
       crontab =
         Parser.parse!(
@@ -290,7 +284,7 @@ defmodule SchedExTest do
     end
 
     test "supports parsing extended strings", context do
-      {:ok, _} = start_supervised({TestTimeScale, {Timex.now("UTC"), 1}}, restart: :temporary)
+      {:ok, _} = start_supervised({TestTimeScale, {DateTime.utc_now(), 1}}, restart: :temporary)
 
       SchedEx.run_every(
         fn -> TestCallee.append(context.agent, 1) end,
@@ -303,7 +297,7 @@ defmodule SchedExTest do
     end
 
     test "supports crontab expressions (and extended ones at that)", context do
-      {:ok, _} = start_supervised({TestTimeScale, {Timex.now("UTC"), 1}}, restart: :temporary)
+      {:ok, _} = start_supervised({TestTimeScale, {DateTime.utc_now(), 1}}, restart: :temporary)
       crontab = Parser.parse!("* * * * * *", true)
 
       SchedEx.run_every(
@@ -317,13 +311,13 @@ defmodule SchedExTest do
     end
 
     test "optionally passes the runtime into the m,f,a", context do
-      {:ok, _} = start_supervised({TestTimeScale, {Timex.now("UTC"), 60}}, restart: :temporary)
+      {:ok, _} = start_supervised({TestTimeScale, {DateTime.utc_now(), 60}}, restart: :temporary)
       {:ok, crontab} = Parser.parse("* * * * *")
 
       {:ok, expected_naive_time} =
         Crontab.Scheduler.get_next_run_date(crontab, NaiveDateTime.utc_now())
 
-      expected_time = Timex.to_datetime(expected_naive_time, "UTC")
+      expected_time = DateTime.from_naive!(expected_naive_time, "UTC")
 
       SchedEx.run_every(
         TestCallee,
@@ -338,13 +332,13 @@ defmodule SchedExTest do
     end
 
     test "optionally passes the runtime into the fn", context do
-      {:ok, _} = start_supervised({TestTimeScale, {Timex.now("UTC"), 60}}, restart: :temporary)
+      {:ok, _} = start_supervised({TestTimeScale, {DateTime.utc_now(), 60}}, restart: :temporary)
       {:ok, crontab} = Parser.parse("* * * * *")
 
       {:ok, expected_naive_time} =
         Crontab.Scheduler.get_next_run_date(crontab, NaiveDateTime.utc_now())
 
-      expected_time = Timex.to_datetime(expected_naive_time, "UTC")
+      expected_time = DateTime.from_naive!(expected_naive_time, "UTC")
 
       SchedEx.run_every(
         fn time -> TestCallee.append(context.agent, time) end,
@@ -357,14 +351,14 @@ defmodule SchedExTest do
     end
 
     test "supports interpreting crontab in a given timezone", context do
-      now = Timex.now("America/Chicago")
+      now = DateTime.now!("America/Chicago")
       {:ok, _} = start_supervised({TestTimeScale, {now, 86_400}}, restart: :temporary)
       {:ok, crontab} = Parser.parse("0 1 * * *")
 
       {:ok, naive_expected_time} =
         Crontab.Scheduler.get_next_run_date(crontab, DateTime.to_naive(now))
 
-      expected_time = Timex.to_datetime(naive_expected_time, "America/Chicago")
+      expected_time = DateTime.from_naive!(naive_expected_time, "America/Chicago")
 
       SchedEx.run_every(
         fn time -> TestCallee.append(context.agent, time) end,
@@ -380,11 +374,11 @@ defmodule SchedExTest do
     test "skips non-existent times when configured to do so and crontab refers to a non-existent time",
          context do
       # Next time will resolve to 2:30 AM CDT, which doesn't exist
-      now = Timex.to_datetime({{2019, 3, 10}, {0, 30, 0}}, "America/Chicago")
+      now = DateTime.from_naive!(~N[2019-03-10 00:30:00], "America/Chicago")
       {:ok, _} = start_supervised({TestTimeScale, {now, 86_400}}, restart: :temporary)
 
       # Skip invocations until the next valid one
-      expected_time_for_skip = Timex.to_datetime({{2019, 3, 11}, {2, 30, 0}}, "America/Chicago")
+      expected_time_for_skip = DateTime.from_naive!(~N[2019-03-11 02:30:00], "America/Chicago")
 
       SchedEx.run_every(
         fn time -> TestCallee.append(context.agent, time) end,
@@ -402,11 +396,11 @@ defmodule SchedExTest do
     test "adjusts non-existent times when configured to do so and crontab refers to a non-existent time",
          context do
       # Next time will resolve to 2:30 AM CDT, which doesn't exist
-      now = Timex.to_datetime({{2019, 3, 10}, {0, 30, 0}}, "America/Chicago")
+      now = DateTime.from_naive!(~N[2019-03-10 00:30:00], "America/Chicago")
       {:ok, _} = start_supervised({TestTimeScale, {now, 86_400}}, restart: :temporary)
 
       # Adjust the invocation forward so it's the same number of seconds from midnight
-      expected_time_for_adjust = Timex.to_datetime({{2019, 3, 10}, {3, 30, 0}}, "America/Chicago")
+      expected_time_for_adjust = DateTime.from_naive!(~N[2019-03-10 03:30:00], "America/Chicago")
 
       SchedEx.run_every(
         fn time -> TestCallee.append(context.agent, time) end,
@@ -426,14 +420,41 @@ defmodule SchedExTest do
       assert adjusted_time == expected_time_for_adjust
     end
 
+    test "adjusts non-existent times when midnight itself is in the DST gap",
+         context do
+      # In America/Santiago, 2026-09-06 00:00:00 is a gap (clocks spring forward at midnight)
+      # A crontab targeting 00:30 will hit a non-existent time, and :adjust needs to
+      # compute from midnight — which is itself in the gap
+      now = DateTime.from_naive!(~N[2026-09-05 23:00:00], "America/Santiago")
+      {:ok, _} = start_supervised({TestTimeScale, {now, 86_400}}, restart: :temporary)
+
+      # 00:30 is 30 minutes from midnight; adjusted forward it lands at 01:30
+      expected_time_for_adjust = DateTime.from_naive!(~N[2026-09-06 01:30:00], "America/Santiago")
+
+      SchedEx.run_every(
+        fn time -> TestCallee.append(context.agent, time) end,
+        "30 0 * * *",
+        timezone: "America/Santiago",
+        nonexistent_time_strategy: :adjust,
+        time_scale: TestTimeScale
+      )
+
+      Process.sleep(1000)
+      [adjusted_time] = TestCallee.clear(context.agent)
+      adjusted_time = DateTime.truncate(adjusted_time, :second)
+
+      assert adjusted_time == expected_time_for_adjust
+    end
+
     test "takes the later time time when configured to do so and crontab refers to an ambiguous time",
          context do
       # Next time will resolve to 1:00 AM CST, which is ambiguous
-      now = Timex.to_datetime({{2017, 11, 5}, {0, 30, 0}}, "America/Chicago")
+      now = DateTime.from_naive!(~N[2017-11-05 00:30:00], "America/Chicago")
       {:ok, _} = start_supervised({TestTimeScale, {now, 86_400}}, restart: :temporary)
 
       # Pick the later of the two ambiguous times
-      expected_time = Timex.to_datetime({{2017, 11, 5}, {1, 0, 0}}, "America/Chicago").after
+      {:ambiguous, _, expected_time} =
+        DateTime.from_naive(~N[2017-11-05 01:00:00], "America/Chicago")
 
       SchedEx.run_every(
         fn time -> TestCallee.append(context.agent, time) end,
@@ -447,7 +468,7 @@ defmodule SchedExTest do
     end
 
     test "is cancellable", context do
-      {:ok, _} = start_supervised({TestTimeScale, {Timex.now("UTC"), 60}}, restart: :temporary)
+      {:ok, _} = start_supervised({TestTimeScale, {DateTime.utc_now(), 60}}, restart: :temporary)
 
       {:ok, token} =
         SchedEx.run_every(
@@ -469,7 +490,7 @@ defmodule SchedExTest do
     end
 
     test "accepts a name option", context do
-      {:ok, _} = start_supervised({TestTimeScale, {Timex.now("UTC"), 60}}, restart: :temporary)
+      {:ok, _} = start_supervised({TestTimeScale, {DateTime.utc_now(), 60}}, restart: :temporary)
 
       {:ok, pid} =
         SchedEx.run_every(
