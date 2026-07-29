@@ -2,7 +2,7 @@ defmodule SchedEx.Mixfile do
   use Mix.Project
 
   @source_url "https://github.com/SchedEx/SchedEx"
-  @version "1.1.5"
+  @version "1.2.0"
 
   def project do
     [
