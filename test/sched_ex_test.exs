@@ -317,7 +317,7 @@ defmodule SchedExTest do
       {:ok, expected_naive_time} =
         Crontab.Scheduler.get_next_run_date(crontab, NaiveDateTime.utc_now())
 
-      expected_time = DateTime.from_naive!(expected_naive_time, "UTC")
+      expected_time = DateTime.from_naive!(expected_naive_time, "Etc/UTC")
 
       SchedEx.run_every(
         TestCallee,
@@ -338,7 +338,7 @@ defmodule SchedExTest do
       {:ok, expected_naive_time} =
         Crontab.Scheduler.get_next_run_date(crontab, NaiveDateTime.utc_now())
 
-      expected_time = DateTime.from_naive!(expected_naive_time, "UTC")
+      expected_time = DateTime.from_naive!(expected_naive_time, "Etc/UTC")
 
       SchedEx.run_every(
         fn time -> TestCallee.append(context.agent, time) end,
