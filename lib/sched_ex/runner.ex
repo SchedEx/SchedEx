@@ -127,7 +127,7 @@ defmodule SchedEx.Runner do
 
   defp schedule_next(_from, crontab, opts) do
     time_scale = Keyword.get(opts, :time_scale, SchedEx.IdentityTimeScale)
-    timezone = Keyword.get(opts, :timezone, "UTC")
+    timezone = Keyword.get(opts, :timezone, "Etc/UTC")
     now = time_scale.now(timezone)
 
     case next_occurrence(now, crontab, timezone, opts) do
