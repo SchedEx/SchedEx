@@ -20,6 +20,6 @@
   "nimble_parsec": {:hex, :nimble_parsec, "1.2.3", "244836e6e3f1200c7f30cb56733fd808744eca61fd182f731eac4af635cc6d0b", [:mix], [], "hexpm", "c8d789e39b9131acf7b99291e93dae60ab48ef14a7ee9d58c6964f59efb570b0"},
   "parse_trans": {:hex, :parse_trans, "3.4.1", "6e6aa8167cb44cc8f39441d05193be6e6f4e7c2946cb2759f015f8c56b76e5ff", [:rebar3], [], "hexpm", "620a406ce75dada827b82e453c19cf06776be266f5a67cff34e1ef2cbb60e49a"},
   "ssl_verify_fun": {:hex, :ssl_verify_fun, "1.1.7", "354c321cf377240c7b8716899e182ce4890c5938111a1296add3ec74cf1715df", [:make, :mix, :rebar3], [], "hexpm", "fe4c190e8f37401d30167c8c405eda19469f34577987c76dde613e838bbc67f8"},
-  "tzdata": {:hex, :tzdata, "1.1.4", "989e0855df5ee8c40eb929ad971bedd7a51e2c223f051fd95cc2d2cf56a60c19", [:mix], [{:hackney, "~> 1.17", [hex: :hackney, repo: "hexpm", optional: false]}], "hexpm", "ab48888699de8ff4a255522fd858abe81bac2e64690a375e6cb590112cf4a24e"},
+  "tzdata": {:hex, :tzdata, "1.2.2", "0e9a50d84e0734038e2e37ed027a7dc5962597b79a7ead9d5f9bce7365aedc02", [:mix], [{:hackney, "~> 1.17 or ~> 4.0", [hex: :hackney, repo: "hexpm", optional: true]}], "hexpm", "4a2435eb3614711b220a9f9f9b56204d14518c6a84e94278cc8b697ca62221a7"},
   "unicode_util_compat": {:hex, :unicode_util_compat, "0.7.1", "a48703a25c170eedadca83b11e88985af08d35f37c6f664d6dcfb106a97782fc", [:rebar3], [], "hexpm", "b3a917854ce3ae233619744ad1e0102e05673136776fb2fa76234f3e03b23642"},
 }
